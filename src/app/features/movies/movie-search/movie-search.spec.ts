@@ -38,12 +38,12 @@ describe('MovieSearch', () => {
     return { fixture, element, input, type };
   }
 
-  it('reads the first value of a repeated q param', async () => {
+  it('should handle repeated q params', async () => {
     const { input } = await setup('/?q=alien&q=matrix');
     expect(input.value).toBe('alien');
   });
 
-  it('searches after a short pause while typing', async () => {
+  it('should debounce typing', async () => {
     const { type } = await setup();
     await type('matrix');
     expect(router.url).toBe('/');
@@ -52,7 +52,7 @@ describe('MovieSearch', () => {
     expect(router.url).toBe('/?q=matrix');
   });
 
-  it('searches immediately on Enter / Search and closes the keyboard', async () => {
+  it('should search on submit and blur', async () => {
     const { element, input, type, fixture } = await setup();
     input.focus();
     await type('alien');
@@ -64,7 +64,7 @@ describe('MovieSearch', () => {
     expect(document.activeElement).not.toBe(input);
   });
 
-  it('opens results from a details page as a new history entry', async () => {
+  it('should push history from details page', async () => {
     const { type } = await setup('/movie/603');
     const navigate = vi.spyOn(router, 'navigate');
     await type('alien');
@@ -74,7 +74,7 @@ describe('MovieSearch', () => {
     expect(navigate.mock.calls[0][1]?.replaceUrl).toBe(false);
   });
 
-  it('limits typing to 100 characters and flags a longer query from the URL', async () => {
+  it('should enforce max length', async () => {
     const { element, input, fixture } = await setup(`/?q=${'x'.repeat(120)}`);
     await fixture.whenStable();
 

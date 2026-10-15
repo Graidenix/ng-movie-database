@@ -3,8 +3,7 @@ import { resetRateLimit } from '@api/movies/_lib/rate-limit';
 import { GET as getPopular } from '@api/movies/popular';
 import { GET as search } from '@api/movies/search';
 
-/** API handler tests: input validation, upstream failures, timeouts and rate limiting. */
-describe('API handlers', () => {
+describe('api', () => {
   const realFetch = globalThis.fetch;
   let upstream: ReturnType<typeof vi.fn>;
   const request = (path: string, headers: Record<string, string> = {}) =>
@@ -12,7 +11,6 @@ describe('API handlers', () => {
 
   beforeEach(() => {
     process.env['TMDB_API_KEY'] = 'test-key';
-    process.env['INTERNAL_API_TOKEN'] = 'internal-secret';
     resetRateLimit();
     upstream = vi.fn(async () => Response.json({ page: 1, results: [], total_pages: 1 }));
     globalThis.fetch = upstream as unknown as typeof fetch;
@@ -20,17 +18,16 @@ describe('API handlers', () => {
 
   afterEach(() => {
     globalThis.fetch = realFetch;
-    delete process.env['INTERNAL_API_TOKEN'];
   });
 
-  it('validates search queries and movie ids before calling TMDb', async () => {
+  it('should validate params', async () => {
     expect((await search(request('/api/movies/search?query=%20'))).status).toBe(400);
     expect((await search(request(`/api/movies/search?query=${'x'.repeat(101)}`))).status).toBe(400);
     expect((await getMovie(request('/api/movies/abc'))).status).toBe(400);
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it('sends the key server-side and clamps page and language', async () => {
+  it('should clamp page and language', async () => {
     const response = await getPopular(request('/api/movies/popular?page=9999&lang=xx'));
     const url = new URL(String(upstream.mock.calls[0][0]));
 
@@ -41,7 +38,7 @@ describe('API handlers', () => {
     expect(url.searchParams.get('api_key')).toBe('test-key');
   });
 
-  it('maps upstream 404, 429, errors and timeouts', async () => {
+  it('should map upstream errors', async () => {
     upstream.mockResolvedValueOnce(new Response('{}', { status: 404 }));
     expect((await getMovie(request('/api/movies/1'))).status).toBe(404);
 
@@ -62,7 +59,7 @@ describe('API handlers', () => {
     expect(signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('rate-limits one client but not the app’s own SSR calls', async () => {
+  it('should rate limit per client', async () => {
     const client = { 'x-forwarded-for': '203.0.113.7' };
     for (let i = 0; i < 60; i++) {
       await getPopular(request('/api/movies/popular', client));
@@ -75,10 +72,5 @@ describe('API handlers', () => {
       request('/api/movies/popular', { 'x-forwarded-for': '198.51.100.1' }),
     );
     expect(otherClient.status).toBe(200);
-
-    const ssr = await getPopular(
-      request('/api/movies/popular', { ...client, 'x-internal-token': 'internal-secret' }),
-    );
-    expect(ssr.status).toBe(200);
   });
 });

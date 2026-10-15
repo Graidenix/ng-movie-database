@@ -7,10 +7,7 @@ interface MovieList {
   results: { id: number }[];
 }
 
-/**
- * GET /sitemap.xml (rewritten here in vercel.json): the home page plus movies that are
- * currently popular or trending. Cached at the edge for a day.
- */
+// GET /sitemap.xml (rewritten in vercel.json): home page plus currently trending and popular movies.
 export async function GET(): Promise<Response> {
   const lists = await Promise.all([
     fetchTmdb('/trending/movie/week', { language: 'en-US' }),

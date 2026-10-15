@@ -37,7 +37,7 @@ describe('HeroCarousel', () => {
     return { fixture, element, activeSlideLabel, indicator, press };
   }
 
-  it('shows one active slide and hides the others from assistive tech', async () => {
+  it('should make inactive slides inert', async () => {
     const { element, activeSlideLabel } = await setup();
 
     expect(element.getAttribute('aria-roledescription')).toBe('carousel');
@@ -45,7 +45,7 @@ describe('HeroCarousel', () => {
     expect(element.querySelectorAll('[data-testid="carousel-slide"][inert]').length).toBe(2);
   });
 
-  it('moves with the arrow keys (wrapping) and the indicator lines', async () => {
+  it('should navigate with arrows and indicators', async () => {
     const { fixture, activeSlideLabel, indicator, press } = await setup();
 
     await press('ArrowRight');
@@ -57,7 +57,7 @@ describe('HeroCarousel', () => {
     expect(activeSlideLabel()).toBe('3 of 3');
   });
 
-  it('pauses and resumes from the active indicator line', async () => {
+  it('should toggle pause from the active indicator', async () => {
     const { fixture, indicator } = await setup();
     const active = indicator(0);
 
@@ -73,7 +73,7 @@ describe('HeroCarousel', () => {
     expect(active.getAttribute('aria-label')).toBe('Pause slideshow');
   });
 
-  it('moves keyboard focus to the new slide when the focused slide is hidden', async () => {
+  it('should keep focus when changing slides', async () => {
     const { fixture, element } = await setup();
     const link = (slide: number) =>
       element.querySelectorAll<HTMLElement>('[data-testid="carousel-details-link"]')[slide];

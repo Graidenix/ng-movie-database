@@ -5,17 +5,16 @@ import { MAX_SEARCH_QUERY_LENGTH } from '@api/movies/_lib/limits';
 import { LanguageService } from '@core/i18n/language.service';
 import { LoadError, Movie, MovieDetails, PagedResponse } from './movie.models';
 
-/** TMDb reports more pages than it serves; requests past page 500 fail. */
+// TMDb reports more pages than it serves; anything past 500 fails.
 const TMDB_MAX_PAGE = 500;
 const TRENDING_SLIDES = 6;
 
-/** Talks to the `/api/movies` proxy and exposes list and details state as signals. */
 @Service()
 export class MovieService {
   private readonly http = inject(HttpClient);
   private readonly languageService = inject(LanguageService);
 
-  // List state (popular or search results)
+  // popular / search results
   private readonly moviesState = signal<Movie[]>([]);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<LoadError | null>(null);
@@ -26,18 +25,17 @@ export class MovieService {
 
   readonly movies = this.moviesState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
-  /** True while a new first page replaces the movies on screen (not while appending a page). */
   readonly refreshing = computed(() => this.loadingState() && this.loadingPageState() === 1);
   readonly error = this.errorState.asReadonly();
   readonly query = this.queryState.asReadonly();
-  /** Movies trending this week that have a backdrop; shown in the home hero carousel. */
-  private readonly trendingState = signal<Movie[]>([]);
-  readonly trending = this.trendingState.asReadonly();
   readonly hasMore = computed(
     () => this.pageState() > 0 && this.pageState() < this.totalPagesState(),
   );
 
-  // Details state
+  private readonly trendingState = signal<Movie[]>([]);
+  readonly trending = this.trendingState.asReadonly();
+
+  // details page
   private readonly movieDetailsState = signal<MovieDetails | null>(null);
   private readonly detailsLoadingState = signal(false);
   private readonly detailsErrorState = signal<LoadError | null>(null);
@@ -72,14 +70,13 @@ export class MovieService {
     this.loadList(this.queryState(), this.lastListPage);
   }
 
-  /** Loads this week's trending movies once per language. Failures leave the hero empty. */
   getTrendingMovies(): void {
     const language = this.languageService.language();
     if (language === this.trendingKey) {
       return;
     }
     this.trendingKey = language;
-    // A newer language wins: drop the previous request so its late response can't overwrite.
+    // a late response for the old language must not win
     this.trendingRequest?.unsubscribe();
     this.trendingRequest = this.http
       .get<PagedResponse<Movie>>('/api/movies/trending', { params: { lang: language } })
@@ -137,8 +134,7 @@ export class MovieService {
   private loadList(query: string, page: number): void {
     const language = this.languageService.language();
     const key = `${language}|${query}`;
-    // Page 1 of the same query and language is already loaded (or loading): keep it, including
-    // pages added by "load more", so returning from a details page restores the list.
+    // Already loaded (or loading). Keeps the extra "load more" pages when coming back from details.
     if (page === 1 && key === this.listKey && !this.errorState()) {
       return;
     }
@@ -148,7 +144,6 @@ export class MovieService {
 
     this.queryState.set(query);
 
-    // The API rejects longer queries; say so instead of sending a request that can only fail.
     if (query.length > MAX_SEARCH_QUERY_LENGTH) {
       this.moviesState.set([]);
       this.pageState.set(0);
@@ -189,7 +184,7 @@ export class MovieService {
   }
 }
 
-/** TMDb pages can overlap when popularity shifts between requests; drop repeated ids. */
+// Popular pages can overlap if the ranking shifts between requests.
 function appendUnique(current: Movie[], next: Movie[]): Movie[] {
   const seen = new Set(current.map((movie) => movie.id));
   return [...current, ...next.filter((movie) => !seen.has(movie.id))];

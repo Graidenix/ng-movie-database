@@ -1,0 +1,34 @@
+$ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+// Backdrop scale-in on load + slow parallax drift (scroll-driven, where supported).
+// Used by the carousel and the movie page.
+@mixin backdrop-motion {
+  .backdrop-motion {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: backdrop-settle 1.8s $ease-out-soft both;
+
+      @supports (animation-timeline: scroll()) {
+        animation:
+          backdrop-settle 1.8s $ease-out-soft both,
+          backdrop-drift linear both;
+        animation-timeline: auto, scroll(root);
+        animation-range:
+          normal,
+          0 100vh;
+      }
+    }
+  }
+
+  @keyframes backdrop-settle {
+    from {
+      scale: 1.08;
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes backdrop-drift {
+    to {
+      translate: 0 18%;
+    }
+  }
+}

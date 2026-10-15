@@ -36,7 +36,7 @@ describe('MovieService', () => {
 
   afterEach(() => http.verify());
 
-  it('loads popular movies and tracks loading state', () => {
+  it('should load popular movies', () => {
     service.getPopularMovies();
     expect(service.loading()).toBe(true);
 
@@ -50,7 +50,7 @@ describe('MovieService', () => {
     expect(service.hasMore()).toBe(true);
   });
 
-  it('searches by keyword and appends unique movies on load more', () => {
+  it('should search and dedupe on load more', () => {
     service.searchMovies('  matrix ');
     const first = http.expectOne((r) => r.url === '/api/movies/search');
     expect(first.request.params.get('query')).toBe('matrix');
@@ -63,7 +63,7 @@ describe('MovieService', () => {
     expect(service.movies().map((m) => m.id)).toEqual([1, 2, 3]);
   });
 
-  it('does not refetch a list that is already loaded', () => {
+  it('should not refetch a loaded list', () => {
     service.getPopularMovies();
     http.expectOne('/api/movies/popular?page=1&lang=en').flush(page(1, [1]));
 
@@ -71,7 +71,7 @@ describe('MovieService', () => {
     http.expectNone(() => true);
   });
 
-  it('exposes errors and retries', () => {
+  it('should retry after an error', () => {
     service.getPopularMovies();
     http
       .expectOne((r) => r.url === '/api/movies/popular')
@@ -86,7 +86,7 @@ describe('MovieService', () => {
     expect(service.movies().length).toBe(1);
   });
 
-  it('loads movie details and maps 404 to notFound', () => {
+  it('should load details and map 404', () => {
     service.getMovieDetails(42);
     http
       .expectOne('/api/movies/42?lang=en')
@@ -99,12 +99,12 @@ describe('MovieService', () => {
     expect(service.detailsError()).toBe('notFound');
   });
 
-  it('rejects invalid ids without a request', () => {
+  it('should reject invalid ids', () => {
     service.getMovieDetails(Number.NaN);
     expect(service.detailsError()).toBe('notFound');
   });
 
-  it('ignores a slower trending response for a language that is no longer selected', () => {
+  it('should drop stale trending responses', () => {
     const language = TestBed.inject(LanguageService);
     service.getTrendingMovies();
     const english = http.expectOne((r) => r.url === '/api/movies/trending');
@@ -118,7 +118,7 @@ describe('MovieService', () => {
     expect(service.trending().map((m) => m.id)).toEqual([7]);
   });
 
-  it('rejects queries longer than the API allows without a request', () => {
+  it('should not send too long queries', () => {
     service.searchMovies('x'.repeat(101));
 
     http.expectNone(() => true);
@@ -127,7 +127,7 @@ describe('MovieService', () => {
     expect(service.movies()).toEqual([]);
   });
 
-  it('maps HTTP 429 to a rate-limit error', () => {
+  it('should map 429 to rateLimited', () => {
     service.getPopularMovies();
     http
       .expectOne((r) => r.url === '/api/movies/popular')
@@ -135,7 +135,7 @@ describe('MovieService', () => {
     expect(service.error()).toBe('rateLimited');
   });
 
-  it('retries a failed page without losing or duplicating loaded movies', () => {
+  it('should retry a failed page without duplicates', () => {
     service.getPopularMovies();
     http.expectOne((r) => r.params.get('page') === '1').flush(page(1, [1, 2]));
 
@@ -152,7 +152,7 @@ describe('MovieService', () => {
     expect(service.movies().map((m) => m.id)).toEqual([1, 2, 3]);
   });
 
-  it('restores popular movies after a search is cleared', () => {
+  it('should go back to popular after search', () => {
     service.searchMovies('matrix');
     http.expectOne((r) => r.url === '/api/movies/search').flush(page(1, [9]));
 

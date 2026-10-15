@@ -9,7 +9,7 @@
 - The key comes from the `TMDB_API_KEY` environment variable: `.env` locally (git-ignored), Vercel Environment Variables in production.
 - Both TMDb key formats work: a v3 API key (sent as the `api_key` query param) and a v4 read access token (sent as `Authorization: Bearer`).
 - The proxy exposes only the endpoints the app needs (popular, search, movie details). Every endpoint validates its params (`page`, `lang`, `query`, `id`), so it can't be used as an open passthrough to TMDb.
-- Responses are cached at Vercel's edge (`s-maxage=600`), which reduces TMDb calls.
+- Responses are cached at Vercel's edge (`s-maxage=600`), which reduces TMDb calls, and in the browser for a minute (`max-age=60`), so going back or paging through visited lists costs no request.
 
 **Consequences:** The key never reaches the client. Locally, the SSR server mounts the same handlers (see decision 2).
 
@@ -33,11 +33,13 @@
 - **Allowed hosts.** Angular's SSRF protection only accepts `movie-database.odajiu.eu`, `*.vercel.app` and `localhost` as hosts (`security.allowedHosts` in `angular.json`).
 - **Render mode.** Every route uses `RenderMode.Server`, because pages depend on the language cookie and on live data.
 
-**Consequences:** Pages are rendered on the server and stay interactive after hydration. The key stays server-side. The proxy keeps its validation and edge caching. The costs: a server-side render on every request, every SSR data request is an extra HTTP hop to `/api`, and code must be SSR-safe (no direct `window`/`localStorage` access). Hosting depends on Vercel for both the SSR runtime and the functions.
+**Consequences:** Pages are rendered on the server and stay interactive after hydration. The key stays server-side. The proxy keeps its validation and edge caching. The costs: a server-side render on every request, and code must be SSR-safe (no direct `window`/`localStorage` access). Hosting depends on Vercel for both the SSR runtime and the functions.
 
 ## 3. Runtime i18n with signals (EN / RU)
 
 **Decision:** A small `LanguageService` holds the active language in a signal and exposes the translations as a `computed`. Switching language takes effect instantly, with no reload. The choice is saved in a `lang` cookie so SSR can read it (see decision 2). Without the cookie, the language comes from `Accept-Language` on the server. TMDb content is requested in the same language (`en-US` / `ru-RU`).
+
+The texts live in `core/i18n/locales/{en,ru}.json`, bundled with a static import, so there's no extra request and no loading state. Templates use `{name}` placeholders. Plurals are objects keyed by `Intl.PluralRules` categories (`one`/`other` in English, `one`/`few`/`many` in Russian). `translations.ts` turns each language's file into the typed `Translations` object, so components keep calling `t().votes(n)`. Texts built from several parts, like `movieFacts`, are put together there from smaller templates.
 
 **Why not `@angular/localize`:** It produces a separate build per locale, and switching language means reloading the page. That's too heavy for two languages.
 
@@ -49,7 +51,7 @@
 
 ## 5. Icons: Atlas Icons, inlined as SVG
 
-**Decision:** The app uses [Atlas Icons](https://iconsatlas.com) (ISC license) in the regular (1.5) stroke weight. They are inlined as SVG through one `<app-icon>` component (`src/app/shared/icon/icon.ts`), which only contains the icons the app uses.
+**Decision:** The app uses [Atlas Icons](https://iconsatlas.com) (ISC license) in the regular (1.5) stroke weight. They are inlined as SVG through one `<app-icon>` component (`src/app/shared/icon/`), which only contains the icons the app uses.
 
 **Why not the npm package:** `@vectoricons/atlas-icons` ships only webfonts (about 17 MB), and there's no Angular package. An inline SVG renders during SSR, has no font loading or invisible-text flash, and is styled through `currentColor` and Tailwind size classes.
 
@@ -139,10 +141,15 @@ It follows the WAI-ARIA carousel pattern:
 - **Timeout.** TMDb calls time out after 8 s and return HTTP 504, so a stalled upstream can't hold a function or an SSR render open.
 - **TMDb rate limits.** A TMDb 429 is passed through with its `Retry-After`. The app shows "too many requests".
 - **Per-IP limit in code.** Every API handler is wrapped in `withRateLimit` (`api/movies/_lib/rate-limit.ts`): a fixed window of 60 requests a minute per client IP, per function instance. It returns 429 with `Retry-After`.
-- **SSR exemption.** The app's own SSR calls all come from the server's IP. They carry the server-only `INTERNAL_API_TOKEN` header (added by `internalApiInterceptor`) and skip the limit. The token is never sent to the browser.
+- **SSR doesn't call `/api` over HTTP.** On the server, `InProcessApiBackend` (provided only in `app.config.server.ts`) replaces `HttpBackend` and calls the handlers in `api/movies/_lib/handlers.ts` directly, so SSR never hits the rate limit and needs no secret to skip it. It replaces the backend rather than adding an interceptor, because Angular runs app interceptors outside the hydration transfer cache; an interceptor that answered the request itself would keep responses out of the cache, and the browser would fetch them again. This also saves SSR a network round trip, and on Vercel a call into a second function. The trade-off: SSR's data calls skip the edge cache and go straight to TMDb.
 - **Search length.** The limit is shared between the API and the search field (`api/movies/_lib/limits.ts`).
 
 **Production setup (outside the repo):**
 
-- **Firewall rule.** Function instances don't share memory, so the in-code limit only blunts bursts against one warm instance. Add a Vercel Firewall rate-limit rule for `/api/*`, keyed on IP, for example 120 requests a minute. Let requests that carry `x-internal-token` bypass it, or the server's own SSR calls will be limited.
-- **Token.** Set `INTERNAL_API_TOKEN` to a long random string in the Vercel environment variables.
+- **Firewall rule.** Function instances don't share memory, so the in-code limit only blunts bursts against one warm instance. Add a Vercel Firewall rate-limit rule for `/api/*`, keyed on IP, for example 120 requests a minute. SSR never calls `/api`, so the rule needs no exceptions.
+
+## 14. Component files
+
+**Decision:** Every component uses the layout `ng generate` produces: its own folder named after the component, holding `name.ts`, `name.html`, `name.scss` and `name.spec.ts` (`app` stays directly in `src/app`, as the CLI generates it). Templates and styles are always external, and the `.scss` file exists even when it's empty, so every component looks the same and a new one needs no restructuring.
+
+Styles that belong to one component live in its `.scss` (Angular scopes the classes and keyframes to it): `.slide-progress` in the carousel, `.card-rise` in the list page. Shared motion lives in `src/styles/_motion.scss` (the easing curve and a `backdrop-motion` mixin used by the carousel and the movie page), reached with `@use 'motion'` through `stylePreprocessorOptions.includePaths`. `src/styles.scss` keeps only global rules: base styles, focus ring, view transitions and the reduced-motion override.

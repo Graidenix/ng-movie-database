@@ -1,0 +1,46 @@
+<a
+  href="#main"
+  class="fixed top-2 left-2 z-50 -translate-y-20 rounded-md bg-marquee px-4 py-2 font-semibold text-ink focus-visible:translate-y-0"
+  (click)="skipToMain($event)"
+>
+  {{ t().skipToContent }}
+</a>
+
+<!-- sm:-mb-18 lets the hero slide under the header; on phones it keeps its own row -->
+<header
+  data-testid="site-header"
+  class="sticky top-0 z-30 sm:-mb-18 bg-linear-to-b from-ink/90 to-transparent transition-[background-color,border-color] duration-300 [view-transition-name:site-header] data-scrolled:border-b data-scrolled:border-seam data-scrolled:bg-ink/85 data-scrolled:backdrop-blur-md"
+  [attr.data-scrolled]="scrolled() ? '' : null"
+>
+  <div
+    class="page-container relative flex h-18 items-center gap-3"
+    [attr.data-search-active]="searchActive() ? '' : null"
+  >
+    <a
+      routerLink="/"
+      data-testid="home-link"
+      class="max-sm:in-data-search-active:hidden mr-auto flex items-center gap-2 rounded-md py-2 font-display text-base sm:text-lg"
+    >
+      <app-logo class="h-7 text-marquee" />
+      <span class="max-sm:sr-only">{{ t().appName }}</span>
+    </a>
+    <app-movie-search [(focused)]="searchActive" />
+    <app-language-switcher class="max-sm:in-data-search-active:hidden" />
+  </div>
+</header>
+
+<main
+  #main
+  id="main"
+  tabindex="-1"
+  data-testid="main-content"
+  class="w-full flex-1 pb-16 outline-none"
+>
+  <router-outlet />
+</main>
+
+<footer data-testid="site-footer" class="border-t border-seam">
+  <p class="page-container py-6 text-sm text-dim">
+    {{ t().tmdbAttribution }}
+  </p>
+</footer>

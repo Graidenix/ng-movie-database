@@ -27,7 +27,7 @@ describe('MovieListPage', () => {
     return fixture;
   }
 
-  it('uses the first value of a repeated q param instead of crashing', async () => {
+  it('should handle repeated q params', async () => {
     const fixture = await render(['alien', 'matrix']);
 
     const search = http.expectOne((r) => r.url === '/api/movies/search');
@@ -39,7 +39,7 @@ describe('MovieListPage', () => {
     expect(heading?.textContent).toContain('Results for “alien”');
   });
 
-  it('shows popular movies again when the search is cleared', async () => {
+  it('should show popular when q is cleared', async () => {
     const fixture = await render('alien');
     http.expectOne((r) => r.url === '/api/movies/search').flush(EMPTY_PAGE);
 
@@ -52,7 +52,7 @@ describe('MovieListPage', () => {
     expect(heading?.textContent).toContain('Popular right now');
   });
 
-  it('explains a too-long query and offers popular movies instead of Retry', async () => {
+  it('should show an error for too long queries', async () => {
     const fixture = await render('x'.repeat(101));
     http.expectNone((r) => r.url === '/api/movies/search');
 

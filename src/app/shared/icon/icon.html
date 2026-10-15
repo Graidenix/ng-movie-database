@@ -1,0 +1,31 @@
+<svg
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-miterlimit="10"
+  class="block size-full"
+  [attr.fill]="filled() ? 'currentColor' : 'none'"
+>
+  @switch (name()) {
+    @case ('search') {
+      <svg:circle cx="9.14" cy="9.14" r="7.64" />
+      <svg:path d="m22.5 22.5-8.11-8.11" />
+    }
+    @case ('arrow-left') {
+      <svg:path d="M2.5 12h21M10.14 4.36 2.5 12l7.64 7.64" />
+    }
+    @case ('arrow-right') {
+      <svg:path d="M21.5 12H.5M13.86 4.36 21.5 12l-7.64 7.64" />
+    }
+    @case ('star') {
+      <svg:path
+        d="m12 2.78 2.94 5.95 6.56.95-4.75 4.63 1.12 6.54L12 17.77l-5.87 3.08 1.12-6.54L2.5 9.68l6.56-.95L12 2.78z"
+      />
+    }
+    @case ('alert') {
+      <svg:path
+        d="M12 3.41a1.71 1.71 0 0 0-1.46.81l-8.81 14.1a1.48 1.48 0 0 0-.23.79A1.48 1.48 0 0 0 3 20.59h18a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-.23-.79l-8.79-14.1A1.71 1.71 0 0 0 12 3.41ZM12 8.18v6.68M12 15.82v1.91"
+      />
+    }
+  }
+</svg>

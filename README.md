@@ -7,7 +7,7 @@ The assignment is in [docs/assignment.md](docs/assignment.md), and the architect
 ## Setup
 
 1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`. Either a v3 API key or a v4 read access token works. Set `INTERNAL_API_TOKEN` to any long random string; it exempts SSR calls from the API rate limit.
+2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`. Either a v3 API key or a v4 read access token works.
 
 ## Development
 
@@ -15,7 +15,7 @@ The assignment is in [docs/assignment.md](docs/assignment.md), and the architect
 ng serve
 ```
 
-This runs the app with SSR at `http://localhost:4200`. The browser and SSR both get their data from `/api/movies/*`, which are Vercel Functions in `api/`. Outside Vercel, the dev server mounts those same handlers itself (`src/server/local-api.ts`) and reads `.env`, so the Vercel CLI isn't needed.
+This runs the app with SSR at `http://localhost:4200`. The browser gets its data from `/api/movies/*`, which are Vercel Functions in `api/`. SSR calls the same handlers in-process (`InProcessApiBackend`) instead of over HTTP. Outside Vercel, the dev server mounts those same handlers itself (`src/server/local-api.ts`) and reads `.env`, so the Vercel CLI isn't needed.
 
 To run the production build locally: `ng build && npm run serve:ssr:ng-movie-database` (port 4000).
 
@@ -34,8 +34,8 @@ Key elements carry `data-testid` attributes in kebab-case, named after what the 
 ## Deployment (Vercel)
 
 - **Import the repo.** `vercel.json` routes every page to the SSR function (`api/ssr.mjs`), and static assets are served from `dist/ng-movie-database/browser`.
-- **Add the keys.** Add `TMDB_API_KEY` and `INTERNAL_API_TOKEN` under Project → Settings → Environment Variables.
-- **Rate limit.** Add a Vercel Firewall rate-limit rule for `/api/*`. Let requests with `x-internal-token` bypass it (see decision 13).
+- **Add the key.** Add `TMDB_API_KEY` under Project → Settings → Environment Variables.
+- **Rate limit.** Add a Vercel Firewall rate-limit rule for `/api/*` (see decision 13).
 - **Connect the domain.** Add `movie-database.odajiu.eu` under Project → Domains, then create a DNS record: `CNAME movie-database → cname.vercel-dns.com`.
 
 ## Structure
@@ -44,6 +44,7 @@ Key elements carry `data-testid` attributes in kebab-case, named after what the 
 api/                       Vercel Functions
   ssr.mjs                  renders pages with Angular SSR
   movies/_lib/tmdb.ts      TMDb proxy: key stays server-side, param validation, caching
+  movies/_lib/handlers.ts  the endpoint handlers, shared by the functions and SSR
   movies/popular.ts        GET /api/movies/popular?page&lang
   movies/search.ts         GET /api/movies/search?query&page&lang
   movies/[id].ts           GET /api/movies/:id?lang
@@ -51,12 +52,13 @@ api/                       Vercel Functions
   sitemap.ts               GET /sitemap.xml (popular + trending movies)
 src/server.ts              Express SSR host (+ local /api in development)
 src/app/
-  core/i18n/               signal-based EN/RU translations (cookie, SSR-aware)
+  core/i18n/               signal-based EN/RU translations (cookie, SSR-aware); texts in locales/*.json
   core/movies/             MovieService (signals), models, TMDb image loader
   core/seo/                SeoService: meta, Open Graph, canonical, JSON-LD
-  features/movies/         list page, search, card, detail page
+  features/movies/         list page, search, card, detail page (one folder each: .ts/.html/.scss/.spec.ts)
   layout/                  language switcher
   shared/icon/             Atlas Icons as inline SVG
+src/styles/_motion.scss    shared easing and backdrop motion mixin
 ```
 
 Imports use path aliases (`@core`, `@features`, `@layout`, `@shared`, `@api`); see [docs/decisions.md](docs/decisions.md).

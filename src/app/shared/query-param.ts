@@ -1,7 +1,4 @@
-/**
- * Normalizes a URL query param to one string. Angular returns an array when the param repeats
- * (`?q=alien&q=matrix`); the first value wins. Anything else becomes ''.
- */
+// Angular gives an array for repeated params (?q=a&q=b). Take the first one.
 export function firstQueryParam(value: unknown): string {
   const first = Array.isArray(value) ? value[0] : value;
   return typeof first === 'string' ? first : '';

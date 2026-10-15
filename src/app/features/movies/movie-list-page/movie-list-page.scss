@@ -1,0 +1,16 @@
+@use 'motion';
+
+// --i = card index within its page
+.card-rise {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: card-rise 0.55s motion.$ease-out-soft both;
+    animation-delay: calc(min(var(--i, 0), 12) * 40ms);
+  }
+}
+
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}

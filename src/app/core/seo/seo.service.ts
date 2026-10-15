@@ -2,45 +2,35 @@ import { DOCUMENT, Service, inject } from '@angular/core';
 import { Meta, MetaDefinition, Title } from '@angular/platform-browser';
 import { LanguageService } from '@core/i18n/language.service';
 
-/** Production origin; canonical and social URLs always point here. */
 export const SITE_URL = 'https://movie-database.odajiu.eu';
 
 const DESCRIPTION_MAX_LENGTH = 160;
 
 export interface SeoImage {
-  /** Absolute URL. */
   url: string;
   width: number;
   height: number;
   alt: string;
 }
 
-/** Branded share card (`public/og-image.jpg`), used when a page has no image of its own. */
+const JSON_LD_ID = 'structured-data';
+
 export const DEFAULT_SEO_IMAGE: Omit<SeoImage, 'alt'> = {
   url: `${SITE_URL}/og-image.jpg`,
   width: 1200,
   height: 630,
 };
-const JSON_LD_ID = 'structured-data';
 
 export interface PageSeo {
   title: string;
   description: string;
-  /** Path of the canonical URL, e.g. `/movie/603`. */
   path: string;
-  /** Social preview image; the branded share card when omitted. */
   image?: SeoImage | null;
   type?: 'website' | 'video.movie';
-  /** Keeps the page out of search results (search results, errors). */
   noindex?: boolean;
-  /** schema.org structured data. */
   jsonLd?: object | null;
 }
 
-/**
- * Sets the document title, meta description, robots, canonical link, Open Graph / Twitter tags
- * and JSON-LD for the current page. Runs during SSR, so crawlers and link previews get them.
- */
 @Service()
 export class SeoService {
   private readonly title = inject(Title);
@@ -114,12 +104,11 @@ export class SeoService {
       script.setAttribute('type', 'application/ld+json');
       this.document.head.appendChild(script);
     }
-    // Escape "<" so movie text can never close the script element.
+    // a movie overview containing </script> must not end the tag
     script.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
   }
 }
 
-/** Cuts text at a word boundary so it fits search result snippets. */
 export function truncate(text: string, maxLength: number): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (clean.length <= maxLength) {

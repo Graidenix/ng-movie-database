@@ -1,12 +1,12 @@
 import { firstQueryParam } from './query-param';
 
 describe('firstQueryParam', () => {
-  it('keeps a single value and takes the first of repeated values', () => {
+  it('should return the first value', () => {
     expect(firstQueryParam('matrix')).toBe('matrix');
     expect(firstQueryParam(['alien', 'matrix'])).toBe('alien');
   });
 
-  it('turns missing or non-string values into an empty string', () => {
+  it('should return empty string for anything else', () => {
     expect(firstQueryParam(undefined)).toBe('');
     expect(firstQueryParam(null)).toBe('');
     expect(firstQueryParam([])).toBe('');

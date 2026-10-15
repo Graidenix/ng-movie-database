@@ -1,9 +1,7 @@
 import { Service, signal } from '@angular/core';
 
-/**
- * Tracks which movie's poster takes part in the list ↔ details view transition.
- * Only that poster gets a `view-transition-name`, so names stay unique on the page.
- */
+// The movie whose poster morphs between list and details. Only that poster gets a
+// view-transition-name, since names must be unique on the page.
 @Service()
 export class PosterTransition {
   private readonly activeIdState = signal<number | null>(null);

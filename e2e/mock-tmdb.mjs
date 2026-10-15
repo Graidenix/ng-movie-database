@@ -1,5 +1,4 @@
-// Preloaded into the SSR server for e2e/ssr.test.mjs: answers TMDb calls with fixed data,
-// so the test needs no API key or network. Every other request goes through untouched.
+// Loaded with --import by ssr.test.mjs. Fakes TMDb so tests don't need a key or network.
 const realFetch = globalThis.fetch;
 
 const movie = (id, ru) => ({
@@ -18,11 +17,23 @@ globalThis.fetch = async (input, init) => {
     return realFetch(input, init);
   }
   const ru = url.searchParams.get('language') === 'ru-RU';
-  const page = (ids) => Response.json({ page: 1, results: ids.map((id) => movie(id, ru)), total_pages: 3, total_results: 60 });
+  const page = (ids) =>
+    Response.json({
+      page: 1,
+      results: ids.map((id) => movie(id, ru)),
+      total_pages: 3,
+      total_results: 60,
+    });
   if (url.pathname.endsWith('/trending/movie/week')) return page([11, 12, 13]);
   if (url.pathname.endsWith('/movie/popular')) return page([1, 2, 3]);
   if (url.pathname.endsWith('/search/movie')) return page([21]);
   if (url.pathname.endsWith('/movie/404404')) return new Response('{}', { status: 404 });
   const id = Number(url.pathname.split('/').at(-1));
-  return Response.json({ ...movie(id, ru), genres: [{ id: 1, name: 'Drama' }], runtime: 101, tagline: null, vote_count: 50 });
+  return Response.json({
+    ...movie(id, ru),
+    genres: [{ id: 1, name: 'Drama' }],
+    runtime: 101,
+    tagline: null,
+    vote_count: 50,
+  });
 };

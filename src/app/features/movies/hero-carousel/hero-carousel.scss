@@ -1,0 +1,15 @@
+@use 'motion';
+
+@include motion.backdrop-motion;
+
+// progress line; its animationend advances the slide
+.slide-progress {
+  transform-origin: left center;
+  animation: slide-progress var(--slide-duration, 7s) linear both;
+}
+
+@keyframes slide-progress {
+  from {
+    scale: 0 1;
+  }
+}

@@ -12,16 +12,12 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-/**
- * Outside Vercel (`ng serve`, `node dist/.../server.mjs`), serve the `api/` Vercel Functions from
- * this server so the app works locally. On Vercel, `/api/*` is handled by the functions directly
- * and never reaches this server.
- */
+// Local dev: serve the api/ functions from here too. On Vercel they're separate functions.
 if (!process.env['VERCEL']) {
   try {
     process.loadEnvFile();
   } catch {
-    // No .env file: TMDB_API_KEY must come from the environment.
+    // no .env, use the environment as is
   }
   const { mountLocalApi } = await import('./server/local-api');
   mountLocalApi(app);
@@ -64,7 +60,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
 }
 
 /**
- * Request handler used by the Angular CLI (for dev-server and during build) and by the Vercel
- * SSR function (`api/ssr.mjs`).
+ * Request handler used by the Angular CLI (for dev-server and during build) and by api/ssr.mjs.
  */
 export const reqHandler = createNodeRequestHandler(app);

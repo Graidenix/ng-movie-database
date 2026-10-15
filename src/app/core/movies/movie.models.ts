@@ -1,4 +1,3 @@
-/** Movie as returned by TMDb list endpoints (popular, search). */
 export interface Movie {
   id: number;
   title: string;
@@ -14,7 +13,6 @@ export interface Genre {
   name: string;
 }
 
-/** Movie as returned by the TMDb details endpoint. */
 export interface MovieDetails extends Movie {
   genres: Genre[];
   runtime: number | null;

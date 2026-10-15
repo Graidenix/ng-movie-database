@@ -23,7 +23,7 @@ describe('MovieCard', () => {
     TestBed.inject(LanguageService).setLanguage('en');
   });
 
-  it('renders title, overview, year, rating and links to details', async () => {
+  it('should render the movie', async () => {
     const fixture = TestBed.createComponent(MovieCard);
     fixture.componentRef.setInput('movie', MOVIE);
     await fixture.whenStable();

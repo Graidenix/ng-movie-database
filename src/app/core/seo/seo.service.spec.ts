@@ -15,7 +15,7 @@ describe('SeoService', () => {
     document = TestBed.inject(DOCUMENT);
   });
 
-  it('sets title, description, social tags, canonical and JSON-LD', () => {
+  it('should set meta, canonical and JSON-LD', () => {
     seo.update({
       title: 'The Matrix (1999) — Movie Database',
       description: 'A hacker learns the truth.',
@@ -48,7 +48,7 @@ describe('SeoService', () => {
     expect(JSON.parse(jsonLd).name).toBe('The Matrix </script>');
   });
 
-  it('marks pages noindex, falls back to the branded share card and drops stale JSON-LD', () => {
+  it('should handle noindex and default image', () => {
     seo.update({
       title: 'A',
       description: 'B',
@@ -68,7 +68,7 @@ describe('SeoService', () => {
 });
 
 describe('truncate', () => {
-  it('keeps short text and cuts long text at a word boundary', () => {
+  it('should cut at a word boundary', () => {
     expect(truncate('  Short   text ', 160)).toBe('Short text');
     expect(truncate('one two three four five', 14)).toBe('one two three…');
   });

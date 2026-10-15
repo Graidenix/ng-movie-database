@@ -1,4 +1,4 @@
-/* Tailwind v4 entry. Kept as plain CSS: Tailwind v4 is not designed to run through Sass. */
+/* Plain CSS on purpose: Tailwind v4 doesn't work through Sass. */
 @import 'tailwindcss';
 
 @theme {
@@ -21,7 +21,6 @@
   }
 }
 
-/* Page content width; pages own their container so heroes can run full-bleed. */
 @utility page-container {
   @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }

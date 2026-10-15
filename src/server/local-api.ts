@@ -7,7 +7,9 @@ import type { Express, Request as ExpressRequest, Response as ExpressResponse } 
 
 type WebHandler = (request: Request) => Promise<Response>;
 
-/** Mounts the `api/` Vercel Function handlers on Express, for local development only. */
+// Development only: outside Vercel (ng serve, serve:ssr) there are no api/ functions,
+// so the browser's /api calls and /sitemap.xml are served from Express instead.
+
 export function mountLocalApi(app: Express): void {
   app.get('/api/movies/popular', adapt(getPopularMovies));
   app.get('/api/movies/search', adapt(searchMovies));

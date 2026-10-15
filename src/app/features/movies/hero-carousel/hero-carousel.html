@@ -1,0 +1,115 @@
+<!-- slides share one grid cell so the carousel takes the tallest one's height -->
+<div class="grid" [attr.aria-live]="autoplay() ? 'off' : 'polite'">
+  @for (movie of movies(); track movie.id; let i = $index) {
+    <div
+      role="group"
+      aria-roledescription="slide"
+      data-testid="carousel-slide"
+      [attr.aria-label]="t().slideLabel(i + 1, movies().length)"
+      [attr.aria-hidden]="i !== index() ? 'true' : null"
+      [attr.inert]="i !== index() ? '' : null"
+      class="relative col-start-1 row-start-1 flex flex-col justify-start transition-opacity duration-700 ease-out sm:min-h-[min(82vh,48rem)] sm:justify-end"
+      [class.opacity-0]="i !== index()"
+      [class.z-10]="i === index()"
+    >
+      <div
+        aria-hidden="true"
+        class="relative -z-10 aspect-[16/10] w-full overflow-hidden sm:absolute sm:inset-0 sm:aspect-auto"
+      >
+        <img
+          [ngSrc]="movie.backdrop_path!"
+          [loaderParams]="{ kind: 'backdrop' }"
+          fill
+          [priority]="i === 0"
+          sizes="100vw"
+          alt=""
+          class="object-cover object-[center_25%]"
+          [class.backdrop-motion]="i === index()"
+        />
+        <div
+          class="absolute inset-0 bg-linear-to-t from-ink via-ink/20 to-transparent sm:hidden"
+        ></div>
+        <div
+          class="absolute inset-0 bg-linear-to-r from-ink via-ink/70 to-ink/5 max-sm:hidden"
+        ></div>
+        <div
+          class="absolute inset-0 bg-linear-to-t from-ink via-ink/10 to-ink/50 max-sm:hidden"
+        ></div>
+      </div>
+
+      <div
+        class="page-container flex flex-col gap-4 pb-16 max-sm:-mt-12 sm:gap-5 sm:pt-32 sm:pb-24"
+      >
+        <h2 class="max-w-4xl font-display text-3xl leading-[1.08] text-balance sm:text-6xl">
+          {{ movie.title }}
+        </h2>
+        <p class="flex items-center gap-4 text-dim">
+          @if (movie.vote_average > 0) {
+            <span class="inline-flex items-center gap-1.5 text-screen">
+              <app-icon name="star" filled class="size-4 text-marquee" />
+              <span class="sr-only">{{ t().rating }}:</span>
+              {{ movie.vote_average | number: '1.1-1' : language() }}
+            </span>
+          }
+          @if (movie.release_date) {
+            <span>{{ movie.release_date.slice(0, 4) }}</span>
+          }
+        </p>
+        @if (movie.overview) {
+          <p class="line-clamp-3 max-w-xl leading-relaxed text-screen/90 sm:text-lg">
+            {{ movie.overview }}
+          </p>
+        }
+        <div class="mt-2">
+          <a
+            data-testid="carousel-details-link"
+            [routerLink]="['/movie', movie.id]"
+            class="inline-flex h-12 items-center gap-2 rounded-full bg-marquee px-6 font-semibold text-ink transition-[scale,filter] hover:brightness-110 active:scale-95"
+          >
+            {{ t().viewDetails }}
+            <app-icon name="arrow-right" class="size-5" />
+          </a>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- clicking the active line pauses/resumes -->
+<div class="absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-8 sm:pb-10">
+  <div data-testid="carousel-indicators" class="flex w-full max-w-xs items-center gap-1.5">
+    @for (movie of movies(); track movie.id; let i = $index) {
+      <button
+        type="button"
+        class="group flex h-6 flex-1 cursor-pointer items-center"
+        [attr.data-testid]="'carousel-indicator-' + i"
+        [attr.aria-label]="
+          i === index()
+            ? userPaused()
+              ? t().playSlideshow
+              : t().pauseSlideshow
+            : t().goToSlide(i + 1, movie.title)
+        "
+        [attr.title]="
+          i === index() ? (userPaused() ? t().playSlideshow : t().pauseSlideshow) : movie.title
+        "
+        [attr.aria-current]="i === index() ? 'true' : null"
+        (click)="i === index() ? togglePause() : goTo(i)"
+      >
+        <span
+          class="relative h-1 w-full overflow-hidden rounded-full bg-screen/25 transition-colors group-hover:bg-screen/45"
+        >
+          @if (i === index()) {
+            <span
+              class="absolute inset-0 rounded-full bg-marquee"
+              [class.slide-progress]="animateProgress()"
+              [style.--slide-duration]="slideDuration"
+              [style.animation-play-state]="autoplay() ? 'running' : 'paused'"
+              (animationend)="next()"
+            ></span>
+          }
+        </span>
+      </button>
+    }
+  </div>
+</div>

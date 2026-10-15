@@ -11,7 +11,7 @@ describe('App', () => {
     }).compileComponents();
   });
 
-  it('renders the app name and TMDB attribution', async () => {
+  it('should render header and footer', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
@@ -20,7 +20,7 @@ describe('App', () => {
     expect(element.querySelector('footer')?.textContent).toContain('TMDB');
   });
 
-  it('switches the UI language', async () => {
+  it('should switch language', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
@@ -35,7 +35,7 @@ describe('App', () => {
     expect(document.documentElement.lang).toBe('ru');
   });
 
-  it('gives the header row to the search while it is focused', async () => {
+  it('should mark the header while search is focused', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;

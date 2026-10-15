@@ -1,13 +1,14 @@
+import { HttpBackend } from '@angular/common/http';
 import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
 import { provideServerRendering, withRoutes } from '@angular/ssr';
 import { appConfig } from './app.config';
-import { INTERNAL_API_TOKEN } from '@core/http/internal-api.interceptor';
+import { InProcessApiBackend } from '@core/http/in-process-api-backend';
 import { serverRoutes } from './app.routes.server';
 
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    { provide: INTERNAL_API_TOKEN, useFactory: () => process.env['INTERNAL_API_TOKEN'] ?? null },
+    { provide: HttpBackend, useClass: InProcessApiBackend },
   ],
 };
 
