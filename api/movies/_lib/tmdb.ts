@@ -62,7 +62,10 @@ export async function fetchTmdb(path: string, params: Record<string, string>): P
 }
 
 export async function proxyTmdb(path: string, params: Record<string, string>): Promise<Response> {
-  const result = await fetchTmdb(path, params);
+  return tmdbResponse(await fetchTmdb(path, params));
+}
+
+export function tmdbResponse(result: TmdbResult): Response {
   if (result.ok) {
     return json(result.data, 200, { 'cache-control': CACHE_CONTROL });
   }

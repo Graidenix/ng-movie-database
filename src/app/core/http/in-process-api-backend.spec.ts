@@ -3,7 +3,6 @@ import {
   HttpClient,
   HttpErrorResponse,
   provideHttpClient,
-  withFetch,
 } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
@@ -19,10 +18,7 @@ describe('InProcessApiBackend', () => {
     upstream = vi.fn(async () => Response.json({ page: 1, results: [], total_pages: 1 }));
     globalThis.fetch = upstream as unknown as typeof fetch;
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(withFetch()),
-        { provide: HttpBackend, useClass: InProcessApiBackend },
-      ],
+      providers: [provideHttpClient(), { provide: HttpBackend, useClass: InProcessApiBackend }],
     });
     http = TestBed.inject(HttpClient);
   });

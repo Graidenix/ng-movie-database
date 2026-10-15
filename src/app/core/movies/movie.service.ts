@@ -3,7 +3,7 @@ import { Service, computed, inject, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { MAX_SEARCH_QUERY_LENGTH } from '@api/movies/_lib/limits';
 import { LanguageService } from '@core/i18n/language.service';
-import { LoadError, Movie, MovieDetails, PagedResponse } from './movie.models';
+import { Genre, GenreMovies, LoadError, Movie, MovieDetails, PagedResponse } from './movie.models';
 
 // TMDb reports more pages than it serves; anything past 500 fails.
 const TMDB_MAX_PAGE = 500;
@@ -14,11 +14,14 @@ export class MovieService {
   private readonly http = inject(HttpClient);
   private readonly languageService = inject(LanguageService);
 
-  // popular / search results
+  // popular / search / genre results
   private readonly moviesState = signal<Movie[]>([]);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<LoadError | null>(null);
   private readonly queryState = signal('');
+  private readonly genreIdState = signal<number | null>(null);
+  // Names seen on detail pages or in genre responses, so the heading shows before the list loads.
+  private readonly genreNamesState = signal<Readonly<Record<number, string>>>({});
   private readonly pageState = signal(0);
   private readonly totalPagesState = signal(0);
   private readonly loadingPageState = signal(0);
@@ -28,6 +31,10 @@ export class MovieService {
   readonly refreshing = computed(() => this.loadingState() && this.loadingPageState() === 1);
   readonly error = this.errorState.asReadonly();
   readonly query = this.queryState.asReadonly();
+  readonly genreName = computed(() => {
+    const id = this.genreIdState();
+    return id === null ? null : (this.genreNamesState()[id] ?? null);
+  });
   readonly hasMore = computed(
     () => this.pageState() > 0 && this.pageState() < this.totalPagesState(),
   );
@@ -37,11 +44,9 @@ export class MovieService {
 
   // details page
   private readonly movieDetailsState = signal<MovieDetails | null>(null);
-  private readonly detailsLoadingState = signal(false);
   private readonly detailsErrorState = signal<LoadError | null>(null);
 
   readonly movieDetails = this.movieDetailsState.asReadonly();
-  readonly detailsLoading = this.detailsLoadingState.asReadonly();
   readonly detailsError = this.detailsErrorState.asReadonly();
 
   private listRequest?: Subscription;
@@ -60,14 +65,18 @@ export class MovieService {
     this.loadList(keyword.trim(), page);
   }
 
+  getGenreMovies(genreId: number, page = 1): void {
+    this.loadList('', page, genreId);
+  }
+
   loadMore(): void {
     if (this.hasMore() && !this.loadingState()) {
-      this.loadList(this.queryState(), this.pageState() + 1);
+      this.loadList(this.queryState(), this.pageState() + 1, this.genreIdState());
     }
   }
 
   retry(): void {
-    this.loadList(this.queryState(), this.lastListPage);
+    this.loadList(this.queryState(), this.lastListPage, this.genreIdState());
   }
 
   getTrendingMovies(): void {
@@ -110,30 +119,25 @@ export class MovieService {
       this.movieDetailsState.set(null);
     }
     if (!Number.isInteger(id) || id <= 0) {
-      this.detailsLoadingState.set(false);
       this.detailsErrorState.set('notFound');
       return;
     }
 
-    this.detailsLoadingState.set(true);
     this.detailsErrorState.set(null);
     this.detailsRequest = this.http
       .get<MovieDetails>(`/api/movies/${id}`, { params: { lang: language } })
       .subscribe({
         next: (movie) => {
           this.movieDetailsState.set(movie);
-          this.detailsLoadingState.set(false);
+          this.rememberGenres(movie.genres);
         },
-        error: (error: unknown) => {
-          this.detailsErrorState.set(toLoadError(error));
-          this.detailsLoadingState.set(false);
-        },
+        error: (error: unknown) => this.detailsErrorState.set(toLoadError(error)),
       });
   }
 
-  private loadList(query: string, page: number): void {
+  private loadList(query: string, page: number, genreId: number | null = null): void {
     const language = this.languageService.language();
-    const key = `${language}|${query}`;
+    const key = `${language}|${query}|${genreId ?? ''}`;
     // Already loaded (or loading). Keeps the extra "load more" pages when coming back from details.
     if (page === 1 && key === this.listKey && !this.errorState()) {
       return;
@@ -143,13 +147,20 @@ export class MovieService {
     this.listRequest?.unsubscribe();
 
     this.queryState.set(query);
+    this.genreIdState.set(genreId);
 
-    if (query.length > MAX_SEARCH_QUERY_LENGTH) {
+    const invalid =
+      query.length > MAX_SEARCH_QUERY_LENGTH
+        ? 'queryTooLong'
+        : genreId !== null && !(Number.isInteger(genreId) && genreId > 0)
+          ? 'genreNotFound'
+          : null;
+    if (invalid) {
       this.moviesState.set([]);
       this.pageState.set(0);
       this.totalPagesState.set(0);
       this.loadingState.set(false);
-      this.errorState.set('queryTooLong');
+      this.errorState.set(invalid);
       return;
     }
 
@@ -157,13 +168,24 @@ export class MovieService {
     this.loadingState.set(true);
     this.errorState.set(null);
 
-    const url = query ? '/api/movies/search' : '/api/movies/popular';
+    const url = genreId
+      ? '/api/movies/genre'
+      : query
+        ? '/api/movies/search'
+        : '/api/movies/popular';
     const params: Record<string, string | number> = { page, lang: language };
     if (query) {
       params['query'] = query;
     }
+    if (genreId) {
+      params['id'] = genreId;
+    }
     this.listRequest = this.http.get<PagedResponse<Movie>>(url, { params }).subscribe({
       next: (response) => {
+        const { genre } = response as Partial<GenreMovies>;
+        if (genre) {
+          this.rememberGenres([genre]);
+        }
         this.moviesState.update((current) =>
           page === 1 ? response.results : appendUnique(current, response.results),
         );
@@ -177,10 +199,18 @@ export class MovieService {
           this.pageState.set(0);
           this.totalPagesState.set(0);
         }
-        this.errorState.set(toLoadError(error));
+        const loadError = toLoadError(error);
+        this.errorState.set(genreId && loadError === 'notFound' ? 'genreNotFound' : loadError);
         this.loadingState.set(false);
       },
     });
+  }
+
+  private rememberGenres(genres: Genre[]): void {
+    this.genreNamesState.update((names) => ({
+      ...names,
+      ...Object.fromEntries(genres.map((genre) => [genre.id, genre.name])),
+    }));
   }
 }
 

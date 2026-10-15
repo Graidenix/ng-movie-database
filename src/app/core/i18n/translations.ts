@@ -1,7 +1,7 @@
 import { MAX_SEARCH_QUERY_LENGTH } from '@api/movies/_lib/limits';
 import { LoadError } from '@core/movies/movie.models';
-import enMessages from './locales/en.json';
-import ruMessages from './locales/ru.json';
+import enMessages from '@locales/en.json';
+import ruMessages from '@locales/ru.json';
 
 export const LANGUAGES = ['en', 'ru'] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -38,6 +38,7 @@ export interface Translations {
   pauseSlideshow: string;
   playSlideshow: string;
   popularHeading: string;
+  genreHeading: (name: string) => string;
   resultsHeading: (query: string) => string;
   resultsCount: (count: number) => string;
   loading: string;
@@ -49,6 +50,7 @@ export interface Translations {
   errors: Record<LoadError, string>;
   searchTooLong: string;
   noPoster: string;
+  posterAlt: (title: string) => string;
   back: string;
   overview: string;
   noOverview: string;
@@ -59,6 +61,7 @@ export interface Translations {
   minutes: (count: number) => string;
   genres: string;
   unknown: string;
+  tmdbCredit: string;
   tmdbAttribution: string;
 }
 
@@ -87,6 +90,7 @@ interface Messages {
   pauseSlideshow: string;
   playSlideshow: string;
   popularHeading: string;
+  genreHeading: string;
   resultsHeading: string;
   resultsCount: PluralForms;
   loading: string;
@@ -98,6 +102,7 @@ interface Messages {
   errors: Record<LoadError, string>;
   searchTooLong: string;
   noPoster: string;
+  posterAlt: string;
   back: string;
   overview: string;
   noOverview: string;
@@ -108,6 +113,7 @@ interface Messages {
   minutes: string;
   genres: string;
   unknown: string;
+  tmdbCredit: string;
   tmdbAttribution: string;
 }
 
@@ -163,6 +169,7 @@ function translations(language: Language, m: Messages): Translations {
     pauseSlideshow: m.pauseSlideshow,
     playSlideshow: m.playSlideshow,
     popularHeading: m.popularHeading,
+    genreHeading: (name) => format(m.genreHeading, { name }),
     resultsHeading: (query) => format(m.resultsHeading, { query }),
     resultsCount: (count) => plural(language, m.resultsCount, count),
     loading: m.loading,
@@ -174,6 +181,7 @@ function translations(language: Language, m: Messages): Translations {
     errors: { ...m.errors, queryTooLong: format(m.errors.queryTooLong, max) },
     searchTooLong: format(m.searchTooLong, max),
     noPoster: m.noPoster,
+    posterAlt: (title) => format(m.posterAlt, { title }),
     back: m.back,
     overview: m.overview,
     noOverview: m.noOverview,
@@ -184,6 +192,7 @@ function translations(language: Language, m: Messages): Translations {
     minutes,
     genres: m.genres,
     unknown: m.unknown,
+    tmdbCredit: m.tmdbCredit,
     tmdbAttribution: m.tmdbAttribution,
   };
 }

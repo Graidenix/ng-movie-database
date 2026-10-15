@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import {
   Component,
   DOCUMENT,
@@ -18,10 +19,9 @@ import { LanguageSwitcher } from '@layout/language-switcher/language-switcher';
 
 @Component({
   selector: 'app-root',
-  imports: [Logo, RouterOutlet, RouterLink, LanguageSwitcher, MovieSearch],
+  imports: [Logo, RouterOutlet, RouterLink, LanguageSwitcher, MovieSearch, NgOptimizedImage],
   host: { class: 'relative flex min-h-dvh flex-col' },
   templateUrl: './app.html',
-  styleUrl: './app.scss',
 })
 export class App {
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
@@ -47,10 +47,12 @@ export class App {
     const update = () => this.scrolled.set(view.scrollY > 8);
     update();
     view.addEventListener('scroll', update, { passive: true });
+
     // scroll restoration doesn't always fire a scroll event
     const navigation = this.router.events
       .pipe(filter((event) => event instanceof Scroll))
       .subscribe(() => view.requestAnimationFrame(update));
+
     this.destroyRef.onDestroy(() => {
       view.removeEventListener('scroll', update);
       navigation.unsubscribe();

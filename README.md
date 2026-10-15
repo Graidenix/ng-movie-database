@@ -49,19 +49,20 @@ api/                       Vercel Functions
   movies/search.ts         GET /api/movies/search?query&page&lang
   movies/[id].ts           GET /api/movies/:id?lang
   movies/trending.ts       GET /api/movies/trending?lang
+  movies/genre.ts          GET /api/movies/genre?id&page&lang (adds the genre name)
   sitemap.ts               GET /sitemap.xml (popular + trending movies)
 src/server.ts              Express SSR host (+ local /api in development)
 src/app/
-  core/i18n/               signal-based EN/RU translations (cookie, SSR-aware); texts in locales/*.json
+  core/i18n/               signal-based EN/RU translations (cookie, SSR-aware); texts in src/locales/*.json
   core/movies/             MovieService (signals), models, TMDb image loader
   core/seo/                SeoService: meta, Open Graph, canonical, JSON-LD
-  features/movies/         list page, search, card, detail page (one folder each: .ts/.html/.scss/.spec.ts)
+  features/movies/         list page, search, card, detail page (one folder each: .ts/.html/.spec.ts, .scss only when needed)
   layout/                  language switcher
   shared/icon/             Atlas Icons as inline SVG
 src/styles/_motion.scss    shared easing and backdrop motion mixin
 ```
 
-Imports use path aliases (`@core`, `@features`, `@layout`, `@shared`, `@api`); see [docs/decisions.md](docs/decisions.md).
+Imports use path aliases (`@core`, `@features`, `@layout`, `@shared`, `@api`, `@locales`); see [docs/decisions.md](docs/decisions.md).
 
 ---
 

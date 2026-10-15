@@ -26,7 +26,7 @@
         <app-icon name="alert" class="mt-0.5 size-5" />
         {{ t().errors[error] }}
       </p>
-      @if (error === 'queryTooLong') {
+      @if (error === 'queryTooLong' || error === 'genreNotFound') {
         <a routerLink="/" class="font-medium text-marquee underline underline-offset-4">
           {{ t().showPopular }}
         </a>

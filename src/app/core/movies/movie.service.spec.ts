@@ -161,4 +161,39 @@ describe('MovieService', () => {
     expect(service.query()).toBe('');
     expect(service.movies().map((m) => m.id)).toEqual([1, 2]);
   });
+
+  it('should load a genre and remember its name', () => {
+    service.getMovieDetails(42);
+    http.expectOne('/api/movies/42?lang=en').flush({
+      ...movie(42),
+      genres: [{ id: 28, name: 'Action' }],
+      runtime: 120,
+      tagline: null,
+      vote_count: 10,
+    });
+
+    service.getGenreMovies(28);
+    expect(service.genreName()).toBe('Action');
+    const request = http.expectOne((r) => r.url === '/api/movies/genre');
+    expect(request.request.params.get('id')).toBe('28');
+    request.flush({ ...page(1, [1, 2]), genre: { id: 28, name: 'Action' } });
+    expect(service.movies().map((m) => m.id)).toEqual([1, 2]);
+
+    service.loadMore();
+    expect(http.expectOne((r) => r.url === '/api/movies/genre').request.params.get('page')).toBe(
+      '2',
+    );
+  });
+
+  it('should report unknown genres', () => {
+    service.getGenreMovies(Number.NaN);
+    http.expectNone((r) => r.url === '/api/movies/genre');
+    expect(service.error()).toBe('genreNotFound');
+
+    service.getGenreMovies(99);
+    http
+      .expectOne((r) => r.url === '/api/movies/genre')
+      .flush(null, { status: 404, statusText: 'Not Found' });
+    expect(service.error()).toBe('genreNotFound');
+  });
 });

@@ -9,7 +9,6 @@ import { Logo } from '@shared/logo/logo';
   selector: 'app-not-found-page',
   imports: [Icon, Logo, RouterLink],
   templateUrl: './not-found-page.html',
-  styleUrl: './not-found-page.scss',
 })
 export class NotFoundPage {
   private readonly seo = inject(SeoService);

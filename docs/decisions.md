@@ -39,7 +39,7 @@
 
 **Decision:** A small `LanguageService` holds the active language in a signal and exposes the translations as a `computed`. Switching language takes effect instantly, with no reload. The choice is saved in a `lang` cookie so SSR can read it (see decision 2). Without the cookie, the language comes from `Accept-Language` on the server. TMDb content is requested in the same language (`en-US` / `ru-RU`).
 
-The texts live in `core/i18n/locales/{en,ru}.json`, bundled with a static import, so there's no extra request and no loading state. Templates use `{name}` placeholders. Plurals are objects keyed by `Intl.PluralRules` categories (`one`/`other` in English, `one`/`few`/`many` in Russian). `translations.ts` turns each language's file into the typed `Translations` object, so components keep calling `t().votes(n)`. Texts built from several parts, like `movieFacts`, are put together there from smaller templates.
+The texts live in `src/locales/{en,ru}.json` (imported as `@locales/*`), bundled with a static import, so there's no extra request and no loading state. Templates use `{name}` placeholders. Plurals are objects keyed by `Intl.PluralRules` categories (`one`/`other` in English, `one`/`few`/`many` in Russian). `translations.ts` turns each language's file into the typed `Translations` object, so components keep calling `t().votes(n)`. Texts built from several parts, like `movieFacts`, are put together there from smaller templates.
 
 **Why not `@angular/localize`:** It produces a separate build per locale, and switching language means reloading the page. That's too heavy for two languages.
 
@@ -59,7 +59,7 @@ The texts live in `core/i18n/locales/{en,ru}.json`, bundled with a static import
 
 ## 6. TypeScript path aliases
 
-**Decision:** Imports across folders use path aliases instead of `../`: `@core/*`, `@features/*`, `@layout/*`, `@shared/*` and `@api/*` (configured in `tsconfig.json`). Files in the same folder still use `./`.
+**Decision:** Imports across folders use path aliases instead of `../`: `@core/*`, `@features/*`, `@layout/*`, `@shared/*`, `@api/*` and `@locales/*` (configured in `tsconfig.json`). Files in the same folder still use `./`.
 
 **Exception:** Files inside `api/` use relative imports, because Vercel compiles each function on its own and doesn't resolve tsconfig `paths`. The shared proxy code sits next to the handlers (`api/movies/_lib/`), so no `../` is needed there either.
 
@@ -83,6 +83,8 @@ Only `transform` (`scale`, `translate`) and `opacity` are animated, so nothing c
 - **From a detail page:** searching opens the list as a new history entry, so Back returns to the movie.
 
 The home hero is a carousel of up to 6 movies trending this week (`GET /api/movies/trending`, TMDb `/trending/movie/week`). Each slide shows a backdrop, title, rating, year, overview and a "View details" link. The carousel is hidden while a search is active.
+
+**Why a trending hero:** it isn't in the assignment, but a hero of what's trending this week is the common opening on movie services. It gives the home page a visual entry point and something current to browse before the user searches.
 
 It follows the WAI-ARIA carousel pattern:
 
@@ -150,6 +152,29 @@ It follows the WAI-ARIA carousel pattern:
 
 ## 14. Component files
 
-**Decision:** Every component uses the layout `ng generate` produces: its own folder named after the component, holding `name.ts`, `name.html`, `name.scss` and `name.spec.ts` (`app` stays directly in `src/app`, as the CLI generates it). Templates and styles are always external, and the `.scss` file exists even when it's empty, so every component looks the same and a new one needs no restructuring.
+**Decision:** Every component uses the layout `ng generate` produces: its own folder named after the component, holding `name.ts`, `name.html` and `name.spec.ts`, plus `name.scss` when it has styles (`app` stays directly in `src/app`, as the CLI generates it). Templates are always external, and so are styles when there are any (decision 15).
 
 Styles that belong to one component live in its `.scss` (Angular scopes the classes and keyframes to it): `.slide-progress` in the carousel, `.card-rise` in the list page. Shared motion lives in `src/styles/_motion.scss` (the easing curve and a `backdrop-motion` mixin used by the carousel and the movie page), reached with `@use 'motion'` through `stylePreprocessorOptions.includePaths`. `src/styles.scss` keeps only global rules: base styles, focus ring, view transitions and the reduced-motion override.
+
+## 15. No empty component stylesheets
+
+**Decision:** A component gets a `.scss` file and `styleUrl` only when it has styles of its own. Styling is done with Tailwind classes in the templates, so most components have none, and an empty file per component would be noise. Today only the carousel, the list page and the movie page have one, for motion that Tailwind can't express. The CLI default is `"style": "none"` in `angular.json`, so `ng generate component` doesn't create empty files; add the `.scss` by hand when a component needs it.
+
+## 16. Browse by genre
+
+**Decision:** Genres on a movie page are links. A click opens the home list filtered to that genre: `/?genre=28`, the most popular movies first (TMDb `/discover/movie`), with a "Genre: Action" heading and no carousel. It reuses the list page, the same way `?q=` does, instead of a separate route. Typing a search replaces the genre, because TMDb search can't filter by genre.
+
+- **Endpoint:** `GET /api/movies/genre?id&page&lang` also fetches TMDb's genre list (edge-cached like everything else) and adds the localized name as `genre`, so the server-rendered heading has it.
+- **Heading:** the client remembers genre names from movie pages, so the heading shows right after the click, before the list loads.
+- **Unknown or invalid ids** show "There's no such genre" with a link to popular movies.
+- **SEO:** genre pages are `noindex`, like search results. A crawlable `/genre/28-action` route with sitemap entries was considered and left for later.
+
+## 17. Footer: TMDB credit
+
+**Decision:** The footer leads with a positive credit, "Movie data and images by" followed by the TMDB logo (`public/tmdb-logo.svg`, the official "blue short" logo), linking to themoviedb.org. TMDb's required notice ("This product uses the TMDB API but is not endorsed or certified by TMDB") stays, in smaller, quieter text underneath. Showing only the disclaimer read as a warning to users; the terms only require that the notice and logo appear somewhere in the app.
+
+The logo goes through `NgOptimizedImage` like every static image, with `[loaderParams]="{ kind: 'static' }"` so the TMDb image loader returns our own file unchanged.
+
+## 18. Readable controls over images
+
+**Decision:** Controls drawn over backdrops (the Back button, the language switcher, the search pill) sit on `bg-ink/85` with a blur. At 85%, even a pure-white image leaves the dimmest text at about 5.3:1, so contrast holds for any backdrop. Found in a browser contrast check: on phones the Back button sat on the bright backdrop band at about 1.2:1.

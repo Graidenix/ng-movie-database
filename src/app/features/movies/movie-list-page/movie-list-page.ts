@@ -24,9 +24,16 @@ export class MovieListPage {
   protected readonly movieService = inject(MovieService);
 
   readonly q = input('', { transform: firstQueryParam });
+  readonly genre = input('', { transform: firstQueryParam });
 
   protected readonly t = this.languageService.t;
   protected readonly query = this.q;
+  // null: no genre filter; NaN: an invalid ?genre= value, reported as genreNotFound.
+  private readonly genreId = computed(() => {
+    const value = this.genre().trim();
+    if (!value) return null;
+    return /^\d{1,10}$/.test(value) ? Number(value) : NaN;
+  });
   protected readonly movies = this.movieService.movies;
   protected readonly loading = this.movieService.loading;
   protected readonly error = this.movieService.error;
@@ -36,14 +43,18 @@ export class MovieListPage {
   protected readonly priorityCards = PRIORITY_CARDS;
   protected readonly pageSize = PAGE_SIZE;
   protected readonly heroMovies = computed(() =>
-    this.query().trim() ? [] : this.movieService.trending(),
+    this.query().trim() || this.genreId() !== null ? [] : this.movieService.trending(),
   );
 
   protected readonly refreshing = this.movieService.refreshing;
 
   protected readonly heading = computed(() => {
+    const t = this.t();
     const query = this.query().trim();
-    return query ? this.t().resultsHeading(query) : this.t().popularHeading;
+    if (query) return t.resultsHeading(query);
+    if (this.genreId() === null) return t.popularHeading;
+    const name = this.movieService.genreName();
+    return name ? t.genreHeading(name) : t.genres;
   });
 
   protected readonly status = computed(() => {
@@ -55,11 +66,14 @@ export class MovieListPage {
   constructor() {
     effect(() => {
       const query = this.query().trim();
+      const genreId = this.genreId();
       this.languageService.language();
       untracked(() => {
         this.movieService.getTrendingMovies();
         if (query) {
           this.movieService.searchMovies(query);
+        } else if (genreId !== null) {
+          this.movieService.getGenreMovies(genreId);
         } else {
           this.movieService.getPopularMovies();
         }
@@ -69,13 +83,14 @@ export class MovieListPage {
     effect(() => {
       const t = this.t();
       const query = this.query().trim();
+      const filtered = !!query || this.genreId() !== null;
       this.seo.update({
-        title: query ? `${t.resultsHeading(query)} — ${t.appName}` : t.appName,
+        title: filtered ? `${this.heading()} — ${t.appName}` : t.appName,
         description: t.seoDescription,
         path: '/',
         image: null,
-        noindex: !!query,
-        jsonLd: query
+        noindex: filtered,
+        jsonLd: filtered
           ? null
           : {
               '@context': 'https://schema.org',

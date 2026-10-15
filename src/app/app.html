@@ -40,7 +40,24 @@
 </main>
 
 <footer data-testid="site-footer" class="border-t border-seam">
-  <p class="page-container py-6 text-sm text-dim">
-    {{ t().tmdbAttribution }}
-  </p>
+  <div
+    class="page-container flex flex-col gap-2 py-8 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <a
+      href="https://www.themoviedb.org"
+      data-testid="tmdb-credit"
+      class="inline-flex w-fit items-center gap-2 rounded text-sm text-screen transition-colors hover:text-marquee"
+    >
+      {{ t().tmdbCredit }}
+      <img
+        ngSrc="/tmdb-logo.svg"
+        width="108"
+        height="14"
+        alt="TMDB"
+        disableOptimizedSrcset
+        [loaderParams]="{ kind: 'static' }"
+      />
+    </a>
+    <p class="text-xs text-dim">{{ t().tmdbAttribution }}</p>
+  </div>
 </footer>

@@ -5,7 +5,6 @@ import { LANGUAGES, Language, TRANSLATIONS } from '@core/i18n/translations';
 @Component({
   selector: 'app-language-switcher',
   templateUrl: './language-switcher.html',
-  styleUrl: './language-switcher.scss',
 })
 export class LanguageSwitcher {
   private readonly languageService = inject(LanguageService);

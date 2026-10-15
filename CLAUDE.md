@@ -29,7 +29,7 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use `model()` for two-way bound properties with `[(prop)]` syntax instead of pairing `input()` with `output()`
 - Use `computed()` for derived state
 - Use `linkedSignal()` for state derived from multiple reactive sources that must stay synchronized
-- Use external template and style files, one folder per component as `ng generate` lays it out (`movie-card/movie-card.ts`, `.html`, `.scss`, `.spec.ts`), even when the `.scss` is empty
+- Use external template files, one folder per component as `ng generate` lays it out (`movie-card/movie-card.ts`, `.html`, `.spec.ts`). Add a `.scss` file only when the component has styles that Tailwind classes can't cover; never keep an empty one
 - Prefer Signal Forms (`@angular/forms/signals`) for new forms. They are stable in Angular v22+ and provide signal-based state, type-safe field access, and schema-based validation
 - When not using Signal Forms, prefer Reactive forms instead of Template-driven ones
 - Do NOT use `ngClass`, use `class` bindings instead

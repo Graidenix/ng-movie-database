@@ -27,6 +27,10 @@ globalThis.fetch = async (input, init) => {
   if (url.pathname.endsWith('/trending/movie/week')) return page([11, 12, 13]);
   if (url.pathname.endsWith('/movie/popular')) return page([1, 2, 3]);
   if (url.pathname.endsWith('/search/movie')) return page([21]);
+  if (url.pathname.endsWith('/discover/movie')) return page([31, 32]);
+  if (url.pathname.endsWith('/genre/movie/list')) {
+    return Response.json({ genres: [{ id: 1, name: ru ? 'драма' : 'Drama' }] });
+  }
   if (url.pathname.endsWith('/movie/404404')) return new Response('{}', { status: 404 });
   const id = Number(url.pathname.split('/').at(-1));
   return Response.json({

@@ -1,4 +1,5 @@
 import { GET as getMovie } from '@api/movies/[id]';
+import { GET as getGenreMovies } from '@api/movies/genre';
 import { resetRateLimit } from '@api/movies/_lib/rate-limit';
 import { GET as getPopular } from '@api/movies/popular';
 import { GET as search } from '@api/movies/search';
@@ -72,5 +73,28 @@ describe('api', () => {
       request('/api/movies/popular', { 'x-forwarded-for': '198.51.100.1' }),
     );
     expect(otherClient.status).toBe(200);
+  });
+
+  it('should add the genre name to genre results', async () => {
+    upstream.mockImplementation(async (input: string | URL) =>
+      String(input).includes('/genre/movie/list')
+        ? Response.json({ genres: [{ id: 28, name: 'Action' }] })
+        : Response.json({ page: 1, results: [], total_pages: 1 }),
+    );
+
+    expect((await getGenreMovies(request('/api/movies/genre?id=abc'))).status).toBe(400);
+    expect((await getGenreMovies(request('/api/movies/genre?id=99'))).status).toBe(404);
+
+    const response = await getGenreMovies(request('/api/movies/genre?id=28&page=2&lang=ru'));
+    const discover = new URL(
+      String(
+        upstream.mock.calls.filter(([url]) => String(url).includes('/discover/movie')).at(-1)![0],
+      ),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ genre: { id: 28, name: 'Action' } });
+    expect(discover.searchParams.get('with_genres')).toBe('28');
+    expect(discover.searchParams.get('page')).toBe('2');
+    expect(discover.searchParams.get('language')).toBe('ru-RU');
   });
 });

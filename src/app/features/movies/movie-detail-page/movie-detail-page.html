@@ -26,7 +26,7 @@
     <button
       type="button"
       data-testid="back-button"
-      class="btn-secondary -ml-1 h-11 border-transparent px-3"
+      class="btn-secondary h-11 border-transparent bg-ink/85 px-3 backdrop-blur-md"
       (click)="goBack()"
     >
       <app-icon name="arrow-left" class="size-5" />
@@ -66,7 +66,7 @@
               height="750"
               priority
               sizes="(min-width: 1024px) 24rem, (min-width: 768px) 20rem, 18rem"
-              alt=""
+              [alt]="t().posterAlt(movie.title)"
               class="h-auto w-full rounded-md shadow-2xl shadow-black/60 ring-1 ring-seam"
               [style.view-transition-name]="posterName(movie.id)"
             />
@@ -88,7 +88,7 @@
               {{ movie.title }}
             </h1>
             @if (movie.tagline) {
-              <p class="text-lg text-dim italic">{{ movie.tagline }}</p>
+              <p class="text-lg text-screen/80 italic">{{ movie.tagline }}</p>
             }
           </header>
 
@@ -132,8 +132,15 @@
               <h2 id="genres-heading" class="text-sm text-dim">{{ t().genres }}</h2>
               <ul data-testid="movie-details-genres" class="flex flex-wrap gap-2">
                 @for (genre of movie.genres; track genre.id) {
-                  <li class="rounded-full border border-edge px-3 py-1 text-sm">
-                    {{ genre.name }}
+                  <li>
+                    <a
+                      routerLink="/"
+                      [queryParams]="{ genre: genre.id }"
+                      data-testid="genre-link"
+                      class="block rounded-full border border-edge px-3 py-1 text-sm transition-colors hover:border-marquee hover:text-marquee"
+                    >
+                      {{ genre.name }}
+                    </a>
                   </li>
                 }
               </ul>

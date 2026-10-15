@@ -12,7 +12,6 @@ import { PosterTransition, posterTransitionName } from '@shared/poster-transitio
   imports: [Icon, PosterPlaceholder, RouterLink, NgOptimizedImage, DecimalPipe],
   host: { class: 'block', 'data-testid': 'movie-card', '[attr.data-movie-id]': 'movie().id' },
   templateUrl: './movie-card.html',
-  styleUrl: './movie-card.scss',
 })
 export class MovieCard {
   private readonly languageService = inject(LanguageService);

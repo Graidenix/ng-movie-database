@@ -7,7 +7,6 @@ export type IconName = 'search' | 'arrow-left' | 'arrow-right' | 'star' | 'alert
   selector: 'app-icon',
   host: { 'aria-hidden': 'true', class: 'inline-block shrink-0' },
   templateUrl: './icon.html',
-  styleUrl: './icon.scss',
 })
 export class Icon {
   readonly name = input.required<IconName>();

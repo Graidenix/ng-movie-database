@@ -76,6 +76,19 @@ describe('server rendering', () => {
     assert.match(html, /Results for “alien”/);
   });
 
+  it('renders genre results', async () => {
+    const { status, html } = await page('/?genre=1');
+    assert.equal(status, 200);
+    assert.match(html, /Genre: Drama/);
+    assert.match(html, /Movie 31/);
+    assert.match(html, /<meta name="robots" content="noindex/);
+  });
+
+  it('links genres on the movie page', async () => {
+    const { html } = await page('/movie/7');
+    assert.match(html, /href="\/\?genre=1"/);
+  });
+
   it('returns 404 for unknown movies', async () => {
     const { status, html } = await page('/movie/404404');
     assert.equal(status, 404);
@@ -144,7 +157,14 @@ describe('server rendering', () => {
 describe('axe', () => {
   const axeSource = readFileSync(fileURLToPath(import.meta.resolve('axe-core/axe.min.js')), 'utf8');
 
-  for (const path of ['/', '/?q=alien', '/movie/7', '/movie/404404', '/no/such/page']) {
+  for (const path of [
+    '/',
+    '/?q=alien',
+    '/?genre=1',
+    '/movie/7',
+    '/movie/404404',
+    '/no/such/page',
+  ]) {
     it(`${path}`, async () => {
       const { html } = await page(path);
       const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true });

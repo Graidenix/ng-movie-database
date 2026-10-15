@@ -62,4 +62,19 @@ describe('MovieListPage', () => {
     );
     expect(element.querySelector('[data-testid="movie-list-retry"]')).toBeNull();
   });
+
+  it('should show a genre without the carousel', async () => {
+    const fixture = TestBed.createComponent(MovieListPage);
+    fixture.componentRef.setInput('genre', '28');
+    await fixture.whenStable();
+    http.match((r) => r.url === '/api/movies/trending').forEach((r) => r.flush(EMPTY_PAGE));
+    http
+      .expectOne((r) => r.url === '/api/movies/genre')
+      .flush({ ...EMPTY_PAGE, genre: { id: 28, name: 'Action' } });
+    await fixture.whenStable();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('#movie-list-heading')?.textContent).toContain('Genre: Action');
+    expect(element.querySelector('app-hero-carousel')).toBeNull();
+  });
 });

@@ -16,7 +16,6 @@ const SEARCH_DEBOUNCE_MS = 350;
   imports: [Icon, FormField],
   host: { class: 'contents' },
   templateUrl: './movie-search.html',
-  styleUrl: './movie-search.scss',
 })
 export class MovieSearch {
   private readonly router = inject(Router);

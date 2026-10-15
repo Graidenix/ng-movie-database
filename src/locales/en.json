@@ -19,6 +19,7 @@
   "pauseSlideshow": "Pause slideshow",
   "playSlideshow": "Play slideshow",
   "popularHeading": "Popular right now",
+  "genreHeading": "Genre: {name}",
   "resultsHeading": "Results for “{query}”",
   "resultsCount": { "one": "{count} movie shown", "other": "{count} movies shown" },
   "loading": "Loading movies",
@@ -30,12 +31,14 @@
   "errors": {
     "network": "Can’t reach the server. Check your connection and try again.",
     "notFound": "This movie isn’t in the database.",
+    "genreNotFound": "There’s no such genre.",
     "server": "The movie service didn’t respond. Try again in a moment.",
     "rateLimited": "Too many requests in a short time. Wait a minute, then try again.",
     "queryTooLong": "Search text is too long. Use up to {max} characters."
   },
   "searchTooLong": "Use up to {max} characters.",
   "noPoster": "No poster",
+  "posterAlt": "{title} poster",
   "back": "Back",
   "overview": "Overview",
   "noOverview": "No description yet.",
@@ -46,5 +49,6 @@
   "minutes": "{count} min",
   "genres": "Genres",
   "unknown": "Unknown",
+  "tmdbCredit": "Movie data and images by",
   "tmdbAttribution": "This product uses the TMDB API but is not endorsed or certified by TMDB."
 }

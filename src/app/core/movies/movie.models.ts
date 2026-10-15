@@ -27,4 +27,9 @@ export interface PagedResponse<T> {
   total_results: number;
 }
 
-export type LoadError = 'network' | 'notFound' | 'server' | 'rateLimited' | 'queryTooLong';
+export interface GenreMovies extends PagedResponse<Movie> {
+  genre: Genre;
+}
+
+export type LoadError =
+  'network' | 'notFound' | 'genreNotFound' | 'server' | 'rateLimited' | 'queryTooLong';

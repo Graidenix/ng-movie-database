@@ -2,7 +2,7 @@
   role="group"
   data-testid="language-switcher"
   [attr.aria-label]="t().languageSwitcherLabel"
-  class="flex rounded-md border border-edge p-1"
+  class="flex rounded-md border border-edge bg-ink/85 p-1 backdrop-blur-md"
 >
   @for (option of options; track option.code) {
     <button
