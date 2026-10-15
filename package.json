@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:ng-movie-database": "node dist/ng-movie-database/server/server.mjs"
+    "serve:ssr:ng-movie-database": "node dist/ng-movie-database/server/server.mjs",
+    "test:ssr": "ng build && node --test e2e/"
   },
   "private": true,
   "packageManager": "npm@11.19.1",
@@ -31,6 +32,7 @@
     "@tailwindcss/postcss": "^4.1.12",
     "@types/express": "^5.0.6",
     "@types/node": "^22.12.0",
+    "axe-core": "^4.10.3",
     "jsdom": "^30.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",

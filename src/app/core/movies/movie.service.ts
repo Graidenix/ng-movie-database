@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Service, computed, inject, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { MAX_SEARCH_QUERY_LENGTH } from '@api/movies/_lib/limits';
 import { LanguageService } from '@core/i18n/language.service';
 import { LoadError, Movie, MovieDetails, PagedResponse } from './movie.models';
 
@@ -49,6 +50,7 @@ export class MovieService {
   private listKey = '';
   private lastListPage = 1;
   private trendingKey = '';
+  private trendingRequest?: Subscription;
   private detailsRequest?: Subscription;
   private detailsKey = '';
 
@@ -77,14 +79,24 @@ export class MovieService {
       return;
     }
     this.trendingKey = language;
-    this.http
+    // A newer language wins: drop the previous request so its late response can't overwrite.
+    this.trendingRequest?.unsubscribe();
+    this.trendingRequest = this.http
       .get<PagedResponse<Movie>>('/api/movies/trending', { params: { lang: language } })
       .subscribe({
-        next: (response) =>
+        next: (response) => {
+          if (this.trendingKey !== language) {
+            return;
+          }
           this.trendingState.set(
             response.results.filter((movie) => movie.backdrop_path).slice(0, TRENDING_SLIDES),
-          ),
-        error: () => (this.trendingKey = ''),
+          );
+        },
+        error: () => {
+          if (this.trendingKey === language) {
+            this.trendingKey = '';
+          }
+        },
       });
   }
 
@@ -135,6 +147,17 @@ export class MovieService {
     this.listRequest?.unsubscribe();
 
     this.queryState.set(query);
+
+    // The API rejects longer queries; say so instead of sending a request that can only fail.
+    if (query.length > MAX_SEARCH_QUERY_LENGTH) {
+      this.moviesState.set([]);
+      this.pageState.set(0);
+      this.totalPagesState.set(0);
+      this.loadingState.set(false);
+      this.errorState.set('queryTooLong');
+      return;
+    }
+
     this.loadingPageState.set(page);
     this.loadingState.set(true);
     this.errorState.set(null);
@@ -176,6 +199,7 @@ function toLoadError(error: unknown): LoadError {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) return 'network';
     if (error.status === 404) return 'notFound';
+    if (error.status === 429) return 'rateLimited';
   }
   return 'server';
 }

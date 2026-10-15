@@ -6,6 +6,21 @@ import { LanguageService } from '@core/i18n/language.service';
 export const SITE_URL = 'https://movie-database.odajiu.eu';
 
 const DESCRIPTION_MAX_LENGTH = 160;
+
+export interface SeoImage {
+  /** Absolute URL. */
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
+/** Branded share card (`public/og-image.jpg`), used when a page has no image of its own. */
+export const DEFAULT_SEO_IMAGE: Omit<SeoImage, 'alt'> = {
+  url: `${SITE_URL}/og-image.jpg`,
+  width: 1200,
+  height: 630,
+};
 const JSON_LD_ID = 'structured-data';
 
 export interface PageSeo {
@@ -13,8 +28,8 @@ export interface PageSeo {
   description: string;
   /** Path of the canonical URL, e.g. `/movie/603`. */
   path: string;
-  /** Absolute image URL for social previews. */
-  image?: string | null;
+  /** Social preview image; the branded share card when omitted. */
+  image?: SeoImage | null;
   type?: 'website' | 'video.movie';
   /** Keeps the page out of search results (search results, errors). */
   noindex?: boolean;
@@ -51,20 +66,20 @@ export class SeoService {
         property: 'og:locale',
         content: this.languageService.language() === 'ru' ? 'ru_RU' : 'en_US',
       },
-      { name: 'twitter:card', content: page.image ? 'summary_large_image' : 'summary' },
+      { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:title', content: page.title },
       { name: 'twitter:description', content: description },
     ]);
 
-    if (page.image) {
-      this.setTags([
-        { property: 'og:image', content: page.image },
-        { name: 'twitter:image', content: page.image },
-      ]);
-    } else {
-      this.meta.removeTag('property="og:image"');
-      this.meta.removeTag('name="twitter:image"');
-    }
+    const image = page.image ?? { ...DEFAULT_SEO_IMAGE, alt: t.appName };
+    this.setTags([
+      { property: 'og:image', content: image.url },
+      { property: 'og:image:width', content: String(image.width) },
+      { property: 'og:image:height', content: String(image.height) },
+      { property: 'og:image:alt', content: image.alt },
+      { name: 'twitter:image', content: image.url },
+      { name: 'twitter:image:alt', content: image.alt },
+    ]);
 
     this.setCanonical(url);
     this.setJsonLd(page.jsonLd ?? null);

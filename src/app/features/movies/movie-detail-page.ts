@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, Location, NgOptimizedImage } from '@angular/common';
+import { DatePipe, DecimalPipe, Location, NgOptimizedImage, formatNumber } from '@angular/common';
 import {
   Component,
   computed,
@@ -11,16 +11,17 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Icon } from '@shared/icon/icon';
+import { PosterPlaceholder } from '@shared/poster-placeholder';
 import { LanguageService } from '@core/i18n/language.service';
 import { MovieDetails } from '@core/movies/movie.models';
 import { MovieService } from '@core/movies/movie.service';
 import { tmdbImageUrl } from '@core/movies/tmdb-image-loader';
-import { SITE_URL, SeoService } from '@core/seo/seo.service';
+import { SITE_URL, SeoImage, SeoService } from '@core/seo/seo.service';
 import { PosterTransition, posterTransitionName } from '@shared/poster-transition';
 
 @Component({
   selector: 'app-movie-detail-page',
-  imports: [Icon, NgOptimizedImage, DatePipe, DecimalPipe, RouterLink],
+  imports: [Icon, PosterPlaceholder, NgOptimizedImage, DatePipe, DecimalPipe, RouterLink],
   template: `
     <div class="relative isolate">
       @if (movie()?.backdrop_path; as backdrop) {
@@ -101,12 +102,11 @@ import { PosterTransition, posterTransitionName } from '@shared/poster-transitio
                   [style.view-transition-name]="posterName(movie.id)"
                 />
               } @else {
-                <div
-                  class="grid aspect-[2/3] place-items-center rounded-md bg-reel text-dim ring-1 ring-seam"
+                <app-poster-placeholder
+                  class="aspect-[2/3] overflow-hidden rounded-md ring-1 ring-seam"
+                  [label]="t().noPoster"
                   [style.view-transition-name]="posterName(movie.id)"
-                >
-                  {{ t().noPoster }}
-                </div>
+                />
               }
             </div>
 
@@ -258,14 +258,35 @@ export class MovieDetailPage {
     const t = this.t();
     const year = movie.release_date?.slice(0, 4);
     const path = `/movie/${movie.id}`;
-    const image = movie.backdrop_path
-      ? tmdbImageUrl(movie.backdrop_path, 'w1280')
+    // TMDb sizes: w1280 backdrops are 1280×720, w780 posters 780×1170.
+    const image: SeoImage | null = movie.backdrop_path
+      ? {
+          url: tmdbImageUrl(movie.backdrop_path, 'w1280'),
+          width: 1280,
+          height: 720,
+          alt: movie.title,
+        }
       : movie.poster_path
-        ? tmdbImageUrl(movie.poster_path, 'w780')
+        ? {
+            url: tmdbImageUrl(movie.poster_path, 'w780'),
+            width: 780,
+            height: 1170,
+            alt: movie.title,
+          }
         : null;
+    const facts = t.movieFacts({
+      genres: movie.genres.map((genre) => genre.name),
+      year,
+      minutes: movie.runtime,
+      rating:
+        movie.vote_count > 0
+          ? formatNumber(movie.vote_average, this.language(), '1.1-1')
+          : undefined,
+    });
+    const summary = movie.overview || movie.tagline || '';
     return {
       title: `${movie.title}${year ? ` (${year})` : ''} — ${t.appName}`,
-      description: movie.overview || movie.tagline || t.seoDescription,
+      description: [facts && `${facts}.`, summary].filter(Boolean).join(' ') || t.seoDescription,
       path,
       image,
       type: 'video.movie' as const,

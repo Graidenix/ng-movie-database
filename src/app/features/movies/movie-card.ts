@@ -2,13 +2,14 @@ import { DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '@shared/icon/icon';
+import { PosterPlaceholder } from '@shared/poster-placeholder';
 import { LanguageService } from '@core/i18n/language.service';
 import { Movie } from '@core/movies/movie.models';
 import { PosterTransition, posterTransitionName } from '@shared/poster-transition';
 
 @Component({
   selector: 'app-movie-card',
-  imports: [Icon, RouterLink, NgOptimizedImage, DecimalPipe],
+  imports: [Icon, PosterPlaceholder, RouterLink, NgOptimizedImage, DecimalPipe],
   host: { class: 'block', 'data-testid': 'movie-card', '[attr.data-movie-id]': 'movie().id' },
   template: `
     <a
@@ -31,9 +32,7 @@ import { PosterTransition, posterTransitionName } from '@shared/poster-transitio
             class="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
           />
         } @else {
-          <span class="absolute inset-0 grid place-items-center p-4 text-center text-sm text-dim">
-            {{ t().noPoster }}
-          </span>
+          <app-poster-placeholder class="absolute inset-0" [label]="t().noPoster" />
         }
       </div>
       <div class="flex flex-col gap-1">

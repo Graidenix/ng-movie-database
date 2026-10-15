@@ -19,9 +19,12 @@ export function tmdbPage(url: URL): string {
   return Number.isInteger(page) && page >= 1 && page <= MAX_PAGE ? String(page) : '1';
 }
 
+/** Upper bound for one TMDb call, so a stalled upstream can't hold a function (or SSR) open. */
+const TMDB_TIMEOUT_MS = 8000;
+
 export type TmdbResult =
   | { ok: true; data: unknown }
-  | { ok: false; status: 404 | 500 | 502; error: string };
+  | { ok: false; status: 404 | 429 | 500 | 502 | 504; error: string; retryAfter?: string };
 
 /**
  * Calls TMDb with the server-side API key.
@@ -46,15 +49,26 @@ export async function fetchTmdb(path: string, params: Record<string, string>): P
   }
 
   try {
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(TMDB_TIMEOUT_MS) });
     if (response.status === 404) {
       return { ok: false, status: 404, error: 'Not found' };
+    }
+    if (response.status === 429) {
+      return {
+        ok: false,
+        status: 429,
+        error: 'TMDb rate limit reached',
+        retryAfter: response.headers.get('retry-after') ?? undefined,
+      };
     }
     if (!response.ok) {
       return { ok: false, status: 502, error: 'TMDb request failed' };
     }
     return { ok: true, data: await response.json() };
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return { ok: false, status: 504, error: 'TMDb did not respond in time' };
+    }
     return { ok: false, status: 502, error: 'TMDb is unavailable' };
   }
 }
@@ -62,7 +76,11 @@ export async function fetchTmdb(path: string, params: Record<string, string>): P
 /** Calls TMDb and forwards the JSON result, cached at the edge. */
 export async function proxyTmdb(path: string, params: Record<string, string>): Promise<Response> {
   const result = await fetchTmdb(path, params);
-  return result.ok
-    ? json(result.data, 200, { 'cache-control': CACHE_CONTROL })
-    : json({ error: result.error }, result.status);
+  if (result.ok) {
+    return json(result.data, 200, { 'cache-control': CACHE_CONTROL });
+  }
+  const headers: Record<string, string> = result.retryAfter
+    ? { 'retry-after': result.retryAfter }
+    : {};
+  return json({ error: result.error }, result.status, headers);
 }

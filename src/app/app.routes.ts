@@ -10,5 +10,8 @@ export const routes: Routes = [
     loadComponent: () =>
       import('@features/movies/movie-detail-page').then((m) => m.MovieDetailPage),
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: '**',
+    loadComponent: () => import('@features/not-found/not-found-page').then((m) => m.NotFoundPage),
+  },
 ];

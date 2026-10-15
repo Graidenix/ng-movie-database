@@ -3,6 +3,8 @@ import {
   Component,
   DOCUMENT,
   DestroyRef,
+  ElementRef,
+  Injector,
   afterNextRender,
   computed,
   inject,
@@ -17,6 +19,8 @@ import { Icon } from '@shared/icon/icon';
 
 const SLIDE_DURATION_MS = 7000;
 const SWIPE_THRESHOLD_PX = 50;
+const SLIDE_SELECTOR = '[data-testid="carousel-slide"]';
+const DETAILS_LINK_SELECTOR = '[data-testid="carousel-details-link"]';
 
 /**
  * Full-bleed hero carousel of trending movies (WAI-ARIA carousel pattern).
@@ -29,7 +33,8 @@ const SWIPE_THRESHOLD_PX = 50;
   selector: 'app-hero-carousel',
   imports: [Icon, NgOptimizedImage, DecimalPipe, RouterLink],
   host: {
-    class: 'relative isolate block touch-pan-y overflow-hidden',
+    // No overflow clipping here: content always fits (backdrops clip themselves), even at 200% zoom.
+    class: 'relative isolate block touch-pan-y',
     'aria-roledescription': 'carousel',
     '[attr.aria-label]': 't().trendingHeading',
     '(mouseenter)': 'hovered.set(true)',
@@ -170,6 +175,8 @@ const SWIPE_THRESHOLD_PX = 50;
 export class HeroCarousel {
   private readonly languageService = inject(LanguageService);
   private readonly document = inject(DOCUMENT);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Slides; every movie must have a `backdrop_path`. */
@@ -224,12 +231,12 @@ export class HeroCarousel {
   }
 
   protected next(): void {
-    this.index.update((index) => (index + 1) % this.movies().length);
+    this.show((this.index() + 1) % this.movies().length);
   }
 
   protected previous(): void {
     const count = this.movies().length;
-    this.index.update((index) => (index - 1 + count) % count);
+    this.show((this.index() - 1 + count) % count);
   }
 
   protected togglePause(): void {
@@ -237,7 +244,27 @@ export class HeroCarousel {
   }
 
   protected goTo(index: number): void {
+    this.show(index);
+  }
+
+  /**
+   * Switches slides. If focus was inside the slide being hidden (it turns `inert`), move it to
+   * the new slide's details link so keyboard users don't lose their place.
+   */
+  private show(index: number): void {
+    const host = this.host.nativeElement;
+    const active = this.document.activeElement;
+    const focusInSlide = !!active && host.contains(active) && !!active.closest(SLIDE_SELECTOR);
     this.index.set(index);
+    if (focusInSlide) {
+      afterNextRender(
+        () =>
+          host
+            .querySelector<HTMLElement>(`${SLIDE_SELECTOR}:not([inert]) ${DETAILS_LINK_SELECTOR}`)
+            ?.focus(),
+        { injector: this.injector },
+      );
+    }
   }
 
   protected onFocusOut(event: FocusEvent): void {

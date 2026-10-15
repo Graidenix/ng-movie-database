@@ -7,7 +7,7 @@ The assignment is in [docs/assignment.md](docs/assignment.md), and the architect
 ## Setup
 
 1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`. Either a v3 API key or a v4 read access token works.
+2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`. Either a v3 API key or a v4 read access token works. Set `INTERNAL_API_TOKEN` to any long random string; it exempts SSR calls from the API rate limit.
 
 ## Development
 
@@ -22,8 +22,9 @@ To run the production build locally: `ng build && npm run serve:ssr:ng-movie-dat
 ## Tests and build
 
 ```bash
-ng test    # Vitest unit tests
-ng build   # output: dist/ng-movie-database/{browser,server}
+ng test            # Vitest unit tests
+npm run test:ssr   # production build + SSR integration and axe-core tests (TMDb mocked)
+ng build           # output: dist/ng-movie-database/{browser,server}
 ```
 
 ### Test IDs
@@ -33,7 +34,8 @@ Key elements carry `data-testid` attributes in kebab-case, named after what the 
 ## Deployment (Vercel)
 
 - **Import the repo.** `vercel.json` routes every page to the SSR function (`api/ssr.mjs`), and static assets are served from `dist/ng-movie-database/browser`.
-- **Add the key.** Add `TMDB_API_KEY` under Project → Settings → Environment Variables.
+- **Add the keys.** Add `TMDB_API_KEY` and `INTERNAL_API_TOKEN` under Project → Settings → Environment Variables.
+- **Rate limit.** Add a Vercel Firewall rate-limit rule for `/api/*`. Let requests with `x-internal-token` bypass it (see decision 13).
 - **Connect the domain.** Add `movie-database.odajiu.eu` under Project → Domains, then create a DNS record: `CNAME movie-database → cname.vercel-dns.com`.
 
 ## Structure

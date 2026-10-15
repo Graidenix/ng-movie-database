@@ -29,4 +29,4 @@ export interface PagedResponse<T> {
   total_results: number;
 }
 
-export type LoadError = 'network' | 'notFound' | 'server';
+export type LoadError = 'network' | 'notFound' | 'server' | 'rateLimited' | 'queryTooLong';

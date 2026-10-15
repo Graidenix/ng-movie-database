@@ -1,5 +1,5 @@
 import { IMAGE_CONFIG, IMAGE_LOADER, registerLocaleData } from '@angular/common';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import localeRu from '@angular/common/locales/ru';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
@@ -10,6 +10,7 @@ import {
   withViewTransitions,
 } from '@angular/router';
 import { TMDB_IMAGE_BREAKPOINTS, tmdbImageLoader } from '@core/movies/tmdb-image-loader';
+import { internalApiInterceptor } from '@core/http/internal-api.interceptor';
 import { routes } from './app.routes';
 
 registerLocaleData(localeRu);
@@ -27,7 +28,7 @@ export const appConfig: ApplicationConfig = {
     // Hydration includes the HTTP transfer cache: GET responses fetched during SSR are reused
     // by the browser instead of being requested again.
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch()),
+    provideHttpClient(withFetch(), withInterceptors([internalApiInterceptor])),
     { provide: IMAGE_LOADER, useValue: tmdbImageLoader },
     { provide: IMAGE_CONFIG, useValue: { breakpoints: TMDB_IMAGE_BREAKPOINTS } },
   ],

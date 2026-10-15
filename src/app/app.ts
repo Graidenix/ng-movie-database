@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet, Scroll } from '@angular/router';
 import { Logo } from '@shared/logo/logo';
 import { filter } from 'rxjs';
 import { LanguageService } from '@core/i18n/language.service';
@@ -37,7 +37,7 @@ import { LanguageSwitcher } from '@layout/language-switcher';
     -->
     <header
       data-testid="site-header"
-      class="sticky top-0 z-30 sm:-mb-18 border-b border-transparent bg-linear-to-b from-ink/90 to-transparent transition-[background-color,border-color] duration-300 [view-transition-name:site-header] data-scrolled:border-seam data-scrolled:bg-ink/85 data-scrolled:backdrop-blur-md"
+      class="sticky top-0 z-30 sm:-mb-18 bg-linear-to-b from-ink/90 to-transparent transition-[background-color,border-color] duration-300 [view-transition-name:site-header] data-scrolled:border-b data-scrolled:border-seam data-scrolled:bg-ink/85 data-scrolled:backdrop-blur-md"
       [attr.data-scrolled]="scrolled() ? '' : null"
     >
       <div
@@ -79,6 +79,7 @@ export class App {
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   protected readonly t = inject(LanguageService).t;
 
   /** Focus is in the header search (phones give it the whole header row). */
@@ -100,7 +101,14 @@ export class App {
     const update = () => this.scrolled.set(view.scrollY > 8);
     update();
     view.addEventListener('scroll', update, { passive: true });
-    this.destroyRef.onDestroy(() => view.removeEventListener('scroll', update));
+    // Scroll restoration after a navigation can land at the top without a scroll event.
+    const navigation = this.router.events
+      .pipe(filter((event) => event instanceof Scroll))
+      .subscribe(() => view.requestAnimationFrame(update));
+    this.destroyRef.onDestroy(() => {
+      view.removeEventListener('scroll', update);
+      navigation.unsubscribe();
+    });
   }
 
   protected skipToMain(event: Event): void {
@@ -111,8 +119,8 @@ export class App {
   /** Moves focus to the page content when the path changes, so screen readers announce the new page. */
   private moveFocusOnPageChange(): void {
     let previousPath: string | null = null;
-    inject(Router)
-      .events.pipe(
+    this.router.events
+      .pipe(
         filter((event) => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )

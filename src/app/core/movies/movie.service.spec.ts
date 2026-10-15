@@ -103,4 +103,62 @@ describe('MovieService', () => {
     service.getMovieDetails(Number.NaN);
     expect(service.detailsError()).toBe('notFound');
   });
+
+  it('ignores a slower trending response for a language that is no longer selected', () => {
+    const language = TestBed.inject(LanguageService);
+    service.getTrendingMovies();
+    const english = http.expectOne((r) => r.url === '/api/movies/trending');
+
+    language.setLanguage('ru');
+    service.getTrendingMovies();
+    const russian = http.expectOne((r) => r.params.get('lang') === 'ru');
+
+    expect(english.cancelled).toBe(true);
+    russian.flush({ ...page(1, []), results: [{ ...movie(7), backdrop_path: '/b.jpg' }] });
+    expect(service.trending().map((m) => m.id)).toEqual([7]);
+  });
+
+  it('rejects queries longer than the API allows without a request', () => {
+    service.searchMovies('x'.repeat(101));
+
+    http.expectNone(() => true);
+    expect(service.error()).toBe('queryTooLong');
+    expect(service.loading()).toBe(false);
+    expect(service.movies()).toEqual([]);
+  });
+
+  it('maps HTTP 429 to a rate-limit error', () => {
+    service.getPopularMovies();
+    http
+      .expectOne((r) => r.url === '/api/movies/popular')
+      .flush(null, { status: 429, statusText: 'Too Many' });
+    expect(service.error()).toBe('rateLimited');
+  });
+
+  it('retries a failed page without losing or duplicating loaded movies', () => {
+    service.getPopularMovies();
+    http.expectOne((r) => r.params.get('page') === '1').flush(page(1, [1, 2]));
+
+    service.loadMore();
+    http
+      .expectOne((r) => r.params.get('page') === '2')
+      .flush(null, { status: 500, statusText: 'Error' });
+    expect(service.error()).toBe('server');
+    expect(service.movies().map((m) => m.id)).toEqual([1, 2]);
+
+    service.retry();
+    http.expectOne((r) => r.params.get('page') === '2').flush(page(2, [2, 3]));
+    expect(service.error()).toBeNull();
+    expect(service.movies().map((m) => m.id)).toEqual([1, 2, 3]);
+  });
+
+  it('restores popular movies after a search is cleared', () => {
+    service.searchMovies('matrix');
+    http.expectOne((r) => r.url === '/api/movies/search').flush(page(1, [9]));
+
+    service.getPopularMovies();
+    http.expectOne((r) => r.url === '/api/movies/popular').flush(page(1, [1, 2]));
+    expect(service.query()).toBe('');
+    expect(service.movies().map((m) => m.id)).toEqual([1, 2]);
+  });
 });

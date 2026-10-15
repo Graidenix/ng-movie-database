@@ -72,4 +72,16 @@ describe('HeroCarousel', () => {
     await fixture.whenStable();
     expect(active.getAttribute('aria-label')).toBe('Pause slideshow');
   });
+
+  it('moves keyboard focus to the new slide when the focused slide is hidden', async () => {
+    const { fixture, element } = await setup();
+    const link = (slide: number) =>
+      element.querySelectorAll<HTMLElement>('[data-testid="carousel-details-link"]')[slide];
+
+    link(0).focus();
+    link(0).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(document.activeElement).toBe(link(1));
+  });
 });

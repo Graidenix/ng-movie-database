@@ -103,10 +103,13 @@ It follows the WAI-ARIA carousel pattern:
 **Decision:** Every page sets its SEO tags while it renders on the server (`SeoService`), so crawlers and link previews get them without running JavaScript:
 
 - **Basics:** title, meta description (cut at a word boundary, at most 160 characters), robots and a canonical URL. The canonical always points to `https://movie-database.odajiu.eu`.
-- **Link previews:** Open Graph and Twitter Card tags. The image is the TMDb backdrop at 1280px.
+- **Descriptions:** the home description says what the site is for: trending and popular movies with ratings, genres, runtimes and release dates, plus search. A movie's description leads with its facts, then the overview, for example "Drama · 2024 · 101 min · rated 7.4/10. …"
+- **Link previews:** Open Graph and Twitter Card tags on every page, each image with its width, height and alt text. Movie pages use the TMDb backdrop (1280×720), or the poster if there is no backdrop. Every other page uses a branded share card (`public/og-image.jpg`, 1200×630, rendered from the logo).
+- **Defaults in `index.html`:** the same tags with default values. Server rendering replaces them, without duplicates, and they still cover a client-only fallback.
 - **Structured data (JSON-LD):** the home page describes a `WebSite` with a `SearchAction`. Movie pages describe a `Movie`: name, description, poster, release date, genres, runtime and `AggregateRating`.
 - **Search results** (`?q=`) are `noindex, follow`. They are thin duplicates of TMDb's own search.
 - **Unknown movies** respond with HTTP 404 (through `RESPONSE_INIT`) and `noindex`.
+- **Unknown URLs** render a 404 page (`NotFoundPage`) with HTTP 404 (`status: 404` on the `**` server route) and `noindex`. Before this they redirected to home, which search engines treat as a soft 404.
 - **`robots.txt`** allows everything except `/api/` and points to the sitemap.
 - **`sitemap.xml`** is a Vercel Function (`api/sitemap.ts`, reached through a rewrite in `vercel.json`). It lists the home page plus every movie on this week's trending list and the first three popular pages, and is cached at the edge for a day.
 - **Manifest:** `manifest.webmanifest` holds the name, colors, display mode and icons (see decision 12).
@@ -128,3 +131,18 @@ It follows the WAI-ARIA carousel pattern:
 | `apple-touch-icon.png` (180 px, full-bleed) | iOS home screen (iOS rounds the corners) |
 | `icons/icon-192.png`, `icons/icon-512.png` | Web app manifest, installed app |
 | `icons/icon-maskable-512.png` | Android adaptive icons; the glyph sits inside the 80% safe zone |
+
+## 13. API hardening: timeouts and rate limits
+
+**Decision:**
+
+- **Timeout.** TMDb calls time out after 8 s and return HTTP 504, so a stalled upstream can't hold a function or an SSR render open.
+- **TMDb rate limits.** A TMDb 429 is passed through with its `Retry-After`. The app shows "too many requests".
+- **Per-IP limit in code.** Every API handler is wrapped in `withRateLimit` (`api/movies/_lib/rate-limit.ts`): a fixed window of 60 requests a minute per client IP, per function instance. It returns 429 with `Retry-After`.
+- **SSR exemption.** The app's own SSR calls all come from the server's IP. They carry the server-only `INTERNAL_API_TOKEN` header (added by `internalApiInterceptor`) and skip the limit. The token is never sent to the browser.
+- **Search length.** The limit is shared between the API and the search field (`api/movies/_lib/limits.ts`).
+
+**Production setup (outside the repo):**
+
+- **Firewall rule.** Function instances don't share memory, so the in-code limit only blunts bursts against one warm instance. Add a Vercel Firewall rate-limit rule for `/api/*`, keyed on IP, for example 120 requests a minute. Let requests that carry `x-internal-token` bypass it, or the server's own SSR calls will be limited.
+- **Token.** Set `INTERNAL_API_TOKEN` to a long random string in the Vercel environment variables.

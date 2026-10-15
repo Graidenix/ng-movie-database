@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import { Icon } from '@shared/icon/icon';
 import { LanguageService } from '@core/i18n/language.service';
 import { MovieService } from '@core/movies/movie.service';
-import { tmdbImageUrl } from '@core/movies/tmdb-image-loader';
 import { SITE_URL, SeoService } from '@core/seo/seo.service';
 import { HeroCarousel } from './hero-carousel';
+import { firstQueryParam } from '@shared/query-param';
 import { MovieCard } from './movie-card';
 
 const SKELETON_CARDS = Array.from({ length: 10 }, (_, index) => index);
@@ -45,14 +45,20 @@ const PAGE_SIZE = 20;
             <app-icon name="alert" class="mt-0.5 size-5" />
             {{ t().errors[error] }}
           </p>
-          <button
-            type="button"
-            data-testid="movie-list-retry"
-            class="btn-secondary"
-            (click)="movieService.retry()"
-          >
-            {{ t().retry }}
-          </button>
+          @if (error === 'queryTooLong') {
+            <a routerLink="/" class="font-medium text-marquee underline underline-offset-4">
+              {{ t().showPopular }}
+            </a>
+          } @else {
+            <button
+              type="button"
+              data-testid="movie-list-retry"
+              class="btn-secondary"
+              (click)="movieService.retry()"
+            >
+              {{ t().retry }}
+            </button>
+          }
         </div>
       }
 
@@ -114,10 +120,10 @@ export class MovieListPage {
   protected readonly movieService = inject(MovieService);
 
   /** `q` query param, bound by the router. */
-  readonly q = input<string>();
+  readonly q = input('', { transform: firstQueryParam });
 
   protected readonly t = this.languageService.t;
-  protected readonly query = computed(() => this.q() ?? '');
+  protected readonly query = this.q;
   protected readonly movies = this.movieService.movies;
   protected readonly loading = this.movieService.loading;
   protected readonly error = this.movieService.error;
@@ -161,12 +167,12 @@ export class MovieListPage {
     effect(() => {
       const t = this.t();
       const query = this.query().trim();
-      const backdrop = this.movieService.trending()[0]?.backdrop_path;
       this.seo.update({
         title: query ? `${t.resultsHeading(query)} — ${t.appName}` : t.appName,
         description: t.seoDescription,
         path: '/',
-        image: backdrop ? tmdbImageUrl(backdrop, 'w1280') : null,
+        // Branded share card: stable, unlike this week's trending backdrop.
+        image: null,
         // Search result pages are thin duplicates of TMDb's own search; keep them out of the index.
         noindex: !!query,
         jsonLd: query
