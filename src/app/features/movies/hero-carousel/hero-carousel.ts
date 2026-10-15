@@ -59,6 +59,23 @@ export class HeroCarousel {
 
   protected readonly index = linkedSignal({ source: this.movies, computation: () => 0 });
 
+  // Slides are stacked in view, so lazy loading would fetch every backdrop at once.
+  // Load the active slide and its neighbours instead, and keep what's loaded.
+  protected readonly loadedSlides = linkedSignal<
+    { movies: Movie[]; index: number },
+    ReadonlySet<number>
+  >({
+    source: () => ({ movies: this.movies(), index: this.index() }),
+    computation: ({ movies, index }, previous) => {
+      const count = movies.length;
+      const loaded = new Set(previous?.source.movies === movies ? previous.value : []);
+      for (const offset of [-1, 0, 1]) {
+        loaded.add((index + offset + count) % count);
+      }
+      return loaded;
+    },
+  });
+
   protected readonly userPaused = signal(false);
   protected readonly hovered = signal(false);
   protected readonly focusInside = signal(false);

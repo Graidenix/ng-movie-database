@@ -17,11 +17,14 @@ function movie(id: number): Movie {
 }
 
 describe('HeroCarousel', () => {
-  async function setup() {
+  async function setup(count = 3) {
     TestBed.configureTestingModule({ imports: [HeroCarousel], providers: [provideRouter([])] });
     TestBed.inject(LanguageService).setLanguage('en');
     const fixture = TestBed.createComponent(HeroCarousel);
-    fixture.componentRef.setInput('movies', [movie(1), movie(2), movie(3)]);
+    fixture.componentRef.setInput(
+      'movies',
+      Array.from({ length: count }, (_, index) => movie(index + 1)),
+    );
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const activeSlideLabel = () =>
@@ -43,6 +46,19 @@ describe('HeroCarousel', () => {
     expect(element.getAttribute('aria-roledescription')).toBe('carousel');
     expect(activeSlideLabel()).toBe('1 of 3');
     expect(element.querySelectorAll('[data-testid="carousel-slide"][inert]').length).toBe(2);
+  });
+
+  it('should load only the active backdrop and its neighbours', async () => {
+    const { element, press } = await setup(5);
+    const loaded = () =>
+      [...element.querySelectorAll('[data-testid="carousel-slide"]')].map(
+        (slide) => !!slide.querySelector('img'),
+      );
+
+    expect(loaded()).toEqual([true, true, false, false, true]);
+
+    await press('ArrowRight');
+    expect(loaded()).toEqual([true, true, true, false, true]);
   });
 
   it('should navigate with arrows and indicators', async () => {

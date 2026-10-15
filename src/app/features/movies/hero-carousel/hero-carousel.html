@@ -16,16 +16,18 @@
         aria-hidden="true"
         class="relative -z-10 aspect-[16/10] w-full overflow-hidden sm:absolute sm:inset-0 sm:aspect-auto"
       >
-        <img
-          [ngSrc]="movie.backdrop_path!"
-          [loaderParams]="{ kind: 'backdrop' }"
-          fill
-          [priority]="i === 0"
-          sizes="100vw"
-          alt=""
-          class="object-cover object-[center_25%]"
-          [class.backdrop-motion]="i === index()"
-        />
+        @if (loadedSlides().has(i)) {
+          <img
+            [ngSrc]="movie.backdrop_path!"
+            [loaderParams]="{ kind: 'backdrop' }"
+            fill
+            [priority]="i === 0"
+            sizes="100vw"
+            alt=""
+            class="object-cover object-[center_25%]"
+            [class.backdrop-motion]="i === index()"
+          />
+        }
         <div
           class="absolute inset-0 bg-linear-to-t from-ink via-ink/20 to-transparent sm:hidden"
         ></div>

@@ -178,3 +178,11 @@ The logo goes through `NgOptimizedImage` like every static image, with `[loaderP
 ## 18. Readable controls over images
 
 **Decision:** Controls drawn over backdrops (the Back button, the language switcher, the search pill) sit on `bg-ink/85` with a blur. At 85%, even a pure-white image leaves the dimmest text at about 5.3:1, so contrast holds for any backdrop. Found in a browser contrast check: on phones the Back button sat on the bright backdrop band at about 1.2:1.
+
+## 19. Backdrop sizes and carousel image loading
+
+**Decision:** The TMDb image loader never returns `original`. Backdrops are capped at `w1280` and posters at `w780`, even when the browser asks for more (`sizes="100vw"` on a 3x screen asks for about 3840px). The carousel renders an `<img>` only for the active slide and its two neighbours, and keeps a slide's image once it has loaded. All slides sit in the same grid cell, in view, so lazy loading didn't hold any back: every `original` backdrop downloaded and decoded at once, which froze the home page.
+
+## 20. Long cache for hashed build files
+
+**Decision:** `vercel.json` serves the build's hashed files (`main-*.js`, `chunk-*.js`, `polyfills-*.js`, `styles-*.css`) with `cache-control: public, max-age=31536000, immutable`. Each build gives them new names, so a cached copy is never stale, and the browser stops checking them on every visit. Vercel's default for static files was `max-age=0, must-revalidate`, which Lighthouse flagged. Files without a hash in the name (favicons, `og-image.jpg`, `tmdb-logo.svg`, the manifest) keep the default, because they can change under the same URL.
