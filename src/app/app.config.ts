@@ -1,11 +1,27 @@
+import { IMAGE_CONFIG, IMAGE_LOADER, registerLocaleData } from '@angular/common';
+import { provideHttpClient, withFetch } from '@angular/common/http';
+import localeRu from '@angular/common/locales/ru';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import { TMDB_POSTER_WIDTHS, tmdbImageLoader } from '@core/movies/tmdb-image-loader';
 import { routes } from './app.routes';
-import { provideClientHydration } from '@angular/platform-browser';
+
+registerLocaleData(localeRu);
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes), provideClientHydration()
-  ]
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
+    ),
+    // Hydration includes the HTTP transfer cache: GET responses fetched during SSR are reused
+    // by the browser instead of being requested again.
+    provideClientHydration(withEventReplay()),
+    provideHttpClient(withFetch()),
+    { provide: IMAGE_LOADER, useValue: tmdbImageLoader },
+    { provide: IMAGE_CONFIG, useValue: { breakpoints: TMDB_POSTER_WIDTHS } },
+  ],
 };

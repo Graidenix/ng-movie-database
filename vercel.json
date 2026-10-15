@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "angular",
+  "outputDirectory": "dist/ng-movie-database/browser",
+  "functions": {
+    "api/ssr.mjs": { "includeFiles": "dist/ng-movie-database/**" }
+  },
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/api/ssr" }]
+}

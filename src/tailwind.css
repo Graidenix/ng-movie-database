@@ -1,0 +1,24 @@
+/* Tailwind v4 entry. Kept as plain CSS: Tailwind v4 is not designed to run through Sass. */
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #101826;
+  --color-reel: #1a2638;
+  --color-seam: #2c3a52;
+  --color-edge: #5b6b85;
+  --color-screen: #ede8df;
+  --color-dim: #a9b2c3;
+  --color-marquee: #f2c14e;
+  --color-alert: #ff8a80;
+  --color-marquee-hover: #f7d47e;
+  --color-marquee-press: #e0ae38;
+
+  --font-display: 'Unbounded', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer components {
+  .btn-secondary {
+    @apply inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-edge px-6 font-medium text-screen transition-colors hover:border-marquee hover:text-marquee disabled:cursor-wait disabled:opacity-60;
+  }
+}

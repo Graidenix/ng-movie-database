@@ -8,7 +8,11 @@
   "projects": {
     "ng-movie-database": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -25,12 +29,18 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/tailwind.css",
+              "src/styles.scss"
             ],
+            "inlineStyleLanguage": "scss",
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": []
+              "allowedHosts": [
+                "movie-database.odajiu.eu",
+                "*.vercel.app",
+                "localhost"
+              ]
             },
             "ssr": {
               "entry": "src/server.ts"
@@ -73,7 +83,8 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {}
         }
       }
     }

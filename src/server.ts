@@ -13,16 +13,19 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Outside Vercel (`ng serve`, `node dist/.../server.mjs`), serve the `api/` Vercel Functions from
+ * this server so the app works locally. On Vercel, `/api/*` is handled by the functions directly
+ * and never reaches this server.
  */
+if (!process.env['VERCEL']) {
+  try {
+    process.loadEnvFile();
+  } catch {
+    // No .env file: TMDB_API_KEY must come from the environment.
+  }
+  const { mountLocalApi } = await import('./server/local-api');
+  mountLocalApi(app);
+}
 
 /**
  * Serve static files from /browser
@@ -41,9 +44,7 @@ app.use(
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
+    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });
 
@@ -63,6 +64,7 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
 }
 
 /**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
+ * Request handler used by the Angular CLI (for dev-server and during build) and by the Vercel
+ * SSR function (`api/ssr.mjs`).
  */
 export const reqHandler = createNodeRequestHandler(app);

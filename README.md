@@ -1,59 +1,57 @@
-# NgMovieDatabase
+# Movie Database
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.2.
+Browse popular movies and search [TMDB](https://www.themoviedb.org/), in English or Russian. Built with Angular 22 (SSR with hydration, standalone components, signals, Signal Forms), Tailwind CSS 4, SCSS and Atlas Icons, hosted on Vercel at [movie-database.odajiu.eu](https://movie-database.odajiu.eu).
 
-## Development server
+The assignment is in [docs/assignment.md](docs/assignment.md), and the architecture decisions are in [docs/decisions.md](docs/decisions.md).
 
-To start a local development server, run:
+## Setup
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`. Either a v3 API key or a v4 read access token works.
+
+## Development
 
 ```bash
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+This runs the app with SSR at `http://localhost:4200`. The browser and SSR both get their data from `/api/movies/*`, which are Vercel Functions in `api/`. Outside Vercel, the dev server mounts those same handlers itself (`src/server/local-api.ts`) and reads `.env`, so the Vercel CLI isn't needed.
 
-## Code scaffolding
+To run the production build locally: `ng build && npm run serve:ssr:ng-movie-database` (port 4000).
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Tests and build
 
 ```bash
-ng generate --help
+ng test    # Vitest unit tests
+ng build   # output: dist/ng-movie-database/{browser,server}
 ```
 
-## Building
+## Deployment (Vercel)
 
-To build the project run:
+- **Import the repo.** `vercel.json` routes every page to the SSR function (`api/ssr.mjs`), and static assets are served from `dist/ng-movie-database/browser`.
+- **Add the key.** Add `TMDB_API_KEY` under Project → Settings → Environment Variables.
+- **Connect the domain.** Add `movie-database.odajiu.eu` under Project → Domains, then create a DNS record: `CNAME movie-database → cname.vercel-dns.com`.
 
-```bash
-ng build
+## Structure
+
+```
+api/                       Vercel Functions
+  ssr.mjs                  renders pages with Angular SSR
+  movies/_lib/tmdb.ts      TMDb proxy: key stays server-side, param validation, caching
+  movies/popular.ts        GET /api/movies/popular?page&lang
+  movies/search.ts         GET /api/movies/search?query&page&lang
+  movies/[id].ts           GET /api/movies/:id?lang
+src/server.ts              Express SSR host (+ local /api in development)
+src/app/
+  core/i18n/               signal-based EN/RU translations (cookie, SSR-aware)
+  core/movies/             MovieService (signals), models, TMDb image loader
+  features/movies/         list page, search, card, detail page
+  layout/                  language switcher
+  shared/icon/             Atlas Icons as inline SVG
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Imports use path aliases (`@core`, `@features`, `@layout`, `@shared`, `@api`); see [docs/decisions.md](docs/decisions.md).
 
-## Running unit tests
+---
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+This product uses the TMDB API but is not endorsed or certified by TMDB.
