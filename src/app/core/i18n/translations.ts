@@ -7,13 +7,20 @@ export function isLanguage(value: unknown): value is Language {
 
 export interface Translations {
   appName: string;
+  seoDescription: string;
   languageName: string;
   languageSwitcherLabel: string;
   skipToContent: string;
-  searchHeadline: string;
   searchLabel: string;
   searchPlaceholder: string;
   searchButton: string;
+  searchShort: string;
+  viewDetails: string;
+  trendingHeading: string;
+  slideLabel: (position: number, total: number) => string;
+  goToSlide: (position: number, title: string) => string;
+  pauseSlideshow: string;
+  playSlideshow: string;
   popularHeading: string;
   resultsHeading: (query: string) => string;
   resultsCount: (count: number) => string;
@@ -40,13 +47,21 @@ export interface Translations {
 
 const en: Translations = {
   appName: 'Movie Database',
+  seoDescription:
+    'Browse popular and trending movies, search any title, and see ratings, genres and release dates from The Movie Database (TMDB).',
   languageName: 'English',
   languageSwitcherLabel: 'Language',
   skipToContent: 'Skip to main content',
-  searchHeadline: 'Find a film',
   searchLabel: 'Movie title',
   searchPlaceholder: 'Try “Arrival” or “Amélie”',
   searchButton: 'Search',
+  searchShort: 'Search movies',
+  viewDetails: 'View details',
+  trendingHeading: 'Trending this week',
+  slideLabel: (position, total) => `${position} of ${total}`,
+  goToSlide: (position, title) => `Show slide ${position}: ${title}`,
+  pauseSlideshow: 'Pause slideshow',
+  playSlideshow: 'Play slideshow',
   popularHeading: 'Popular right now',
   resultsHeading: (query) => `Results for “${query}”`,
   resultsCount: (count) => `${count} ${count === 1 ? 'movie' : 'movies'} shown`,
@@ -85,13 +100,21 @@ function ruPlural(count: number, one: string, few: string, many: string): string
 
 const ru: Translations = {
   appName: 'База фильмов',
+  seoDescription:
+    'Популярные и трендовые фильмы, поиск по названию, рейтинги, жанры и даты выхода из базы TMDB.',
   languageName: 'Русский',
   languageSwitcherLabel: 'Язык',
   skipToContent: 'Перейти к содержимому',
-  searchHeadline: 'Найдите фильм',
   searchLabel: 'Название фильма',
   searchPlaceholder: 'Например, «Прибытие» или «Амели»',
   searchButton: 'Найти',
+  searchShort: 'Поиск фильмов',
+  viewDetails: 'Подробнее',
+  trendingHeading: 'В тренде на этой неделе',
+  slideLabel: (position, total) => `${position} из ${total}`,
+  goToSlide: (position, title) => `Показать слайд ${position}: ${title}`,
+  pauseSlideshow: 'Остановить слайд-шоу',
+  playSlideshow: 'Запустить слайд-шоу',
   popularHeading: 'Популярное сейчас',
   resultsHeading: (query) => `Результаты по запросу «${query}»`,
   resultsCount: (count) => `Показано ${count} ${ruPlural(count, 'фильм', 'фильма', 'фильмов')}`,

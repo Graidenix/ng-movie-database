@@ -10,10 +10,8 @@
   --color-dim: #a9b2c3;
   --color-marquee: #f2c14e;
   --color-alert: #ff8a80;
-  --color-marquee-hover: #f7d47e;
-  --color-marquee-press: #e0ae38;
 
-  --font-display: 'Unbounded', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Dela Gothic One', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -21,4 +19,9 @@
   .btn-secondary {
     @apply inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-edge px-6 font-medium text-screen transition-colors hover:border-marquee hover:text-marquee disabled:cursor-wait disabled:opacity-60;
   }
+}
+
+/* Page content width; pages own their container so heroes can run full-bleed. */
+@utility page-container {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }

@@ -26,6 +26,10 @@ ng test    # Vitest unit tests
 ng build   # output: dist/ng-movie-database/{browser,server}
 ```
 
+### Test IDs
+
+Key elements carry `data-testid` attributes in kebab-case, named after what the user sees: `site-header`, `search-input`, `hero-carousel`, `carousel-indicator-<n>`, `movie-card` (with `data-movie-id`), `load-more`, `movie-details-title`, `back-button`, and so on. Tests should select by these IDs, not by CSS classes or text.
+
 ## Deployment (Vercel)
 
 - **Import the repo.** `vercel.json` routes every page to the SSR function (`api/ssr.mjs`), and static assets are served from `dist/ng-movie-database/browser`.
@@ -41,10 +45,13 @@ api/                       Vercel Functions
   movies/popular.ts        GET /api/movies/popular?page&lang
   movies/search.ts         GET /api/movies/search?query&page&lang
   movies/[id].ts           GET /api/movies/:id?lang
+  movies/trending.ts       GET /api/movies/trending?lang
+  sitemap.ts               GET /sitemap.xml (popular + trending movies)
 src/server.ts              Express SSR host (+ local /api in development)
 src/app/
   core/i18n/               signal-based EN/RU translations (cookie, SSR-aware)
   core/movies/             MovieService (signals), models, TMDb image loader
+  core/seo/                SeoService: meta, Open Graph, canonical, JSON-LD
   features/movies/         list page, search, card, detail page
   layout/                  language switcher
   shared/icon/             Atlas Icons as inline SVG

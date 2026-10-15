@@ -34,4 +34,20 @@ describe('App', () => {
     expect(element.querySelector('header')?.textContent).toContain('База фильмов');
     expect(document.documentElement.lang).toBe('ru');
   });
+
+  it('gives the header row to the search while it is focused', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const row = () => element.querySelector('[data-testid="site-header"] > div')!;
+    const input = element.querySelector<HTMLInputElement>('[data-testid="search-input"]')!;
+
+    input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await fixture.whenStable();
+    expect(row().hasAttribute('data-search-active')).toBe(true);
+
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    await fixture.whenStable();
+    expect(row().hasAttribute('data-search-active')).toBe(false);
+  });
 });

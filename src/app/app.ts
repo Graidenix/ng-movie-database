@@ -1,15 +1,25 @@
-import { Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { Icon } from '@shared/icon/icon';
+import { Logo } from '@shared/logo/logo';
 import { filter } from 'rxjs';
 import { LanguageService } from '@core/i18n/language.service';
+import { MovieSearch } from '@features/movies/movie-search';
 import { LanguageSwitcher } from '@layout/language-switcher';
 
 @Component({
   selector: 'app-root',
-  imports: [Icon, RouterOutlet, RouterLink, LanguageSwitcher],
-  host: { class: 'flex min-h-dvh flex-col' },
+  imports: [Logo, RouterOutlet, RouterLink, LanguageSwitcher, MovieSearch],
+  host: { class: 'relative flex min-h-dvh flex-col' },
   template: `
     <a
       href="#main"
@@ -19,13 +29,32 @@ import { LanguageSwitcher } from '@layout/language-switcher';
       {{ t().skipToContent }}
     </a>
 
-    <header class="border-b border-seam">
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <a routerLink="/" class="flex items-center gap-2 rounded-md py-2 font-display text-base font-bold sm:text-lg">
-          <app-icon name="movie" class="size-6 text-marquee" />
-          {{ t().appName }}
+    <!--
+      Sticky. From sm up, the negative margin lets page heroes run underneath it; on phones it
+      takes its own space so landscape backdrops show in full below it. Transparent over the hero,
+      a solid blurred bar once the page scrolls. Its own transition name keeps it still during
+      page transitions.
+    -->
+    <header
+      data-testid="site-header"
+      class="sticky top-0 z-30 sm:-mb-18 border-b border-transparent bg-linear-to-b from-ink/90 to-transparent transition-[background-color,border-color] duration-300 [view-transition-name:site-header] data-scrolled:border-seam data-scrolled:bg-ink/85 data-scrolled:backdrop-blur-md"
+      [attr.data-scrolled]="scrolled() ? '' : null"
+    >
+      <div
+        class="page-container relative flex h-18 items-center gap-3"
+        [attr.data-search-active]="searchActive() ? '' : null"
+      >
+        <a
+          routerLink="/"
+          data-testid="home-link"
+          class="max-sm:in-data-search-active:hidden mr-auto flex items-center gap-2 rounded-md py-2 font-display text-base sm:text-lg"
+        >
+          <app-logo class="h-7 text-marquee" />
+          <span class="max-sm:sr-only">{{ t().appName }}</span>
         </a>
-        <app-language-switcher />
+        <!-- Phones: an active search takes the whole row; logo and languages step aside. -->
+        <app-movie-search [(focused)]="searchActive" />
+        <app-language-switcher class="max-sm:in-data-search-active:hidden" />
       </div>
     </header>
 
@@ -33,13 +62,14 @@ import { LanguageSwitcher } from '@layout/language-switcher';
       #main
       id="main"
       tabindex="-1"
-      class="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-16 outline-none sm:px-6 lg:px-8"
+      data-testid="main-content"
+      class="w-full flex-1 pb-16 outline-none"
     >
       <router-outlet />
     </main>
 
-    <footer class="border-t border-seam">
-      <p class="mx-auto max-w-7xl px-4 py-6 text-sm text-dim sm:px-6 lg:px-8">
+    <footer data-testid="site-footer" class="border-t border-seam">
+      <p class="page-container py-6 text-sm text-dim">
         {{ t().tmdbAttribution }}
       </p>
     </footer>
@@ -47,10 +77,30 @@ import { LanguageSwitcher } from '@layout/language-switcher';
 })
 export class App {
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly t = inject(LanguageService).t;
+
+  /** Focus is in the header search (phones give it the whole header row). */
+  protected readonly searchActive = signal(false);
+
+  /** Page scrolled past the top: the header switches from transparent to a solid bar. */
+  protected readonly scrolled = signal(false);
 
   constructor() {
     this.moveFocusOnPageChange();
+    afterNextRender(() => this.trackScroll());
+  }
+
+  private trackScroll(): void {
+    const view = this.document.defaultView;
+    if (!view) {
+      return;
+    }
+    const update = () => this.scrolled.set(view.scrollY > 8);
+    update();
+    view.addEventListener('scroll', update, { passive: true });
+    this.destroyRef.onDestroy(() => view.removeEventListener('scroll', update));
   }
 
   protected skipToMain(event: Event): void {
@@ -64,12 +114,15 @@ export class App {
     inject(Router)
       .events.pipe(
         filter((event) => event instanceof NavigationEnd),
-        takeUntilDestroyed(inject(DestroyRef)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((event) => {
         const path = event.urlAfterRedirects.split(/[?#]/)[0];
-        if (previousPath !== null && path !== previousPath) {
-          this.main().nativeElement.focus({ preventScroll: true });
+        const main = this.main().nativeElement;
+        // Don't pull focus out of the header search while the user types from a detail page.
+        const typingInHeader = main.ownerDocument.activeElement?.closest('header') != null;
+        if (previousPath !== null && path !== previousPath && !typingInHeader) {
+          main.focus({ preventScroll: true });
         }
         previousPath = path;
       });

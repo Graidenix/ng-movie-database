@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: dark;
+  // Keyboard focus and in-page jumps stay clear of the sticky header (WCAG 2.4.11).
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -13,9 +15,89 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-:focus-visible {
-  outline: 3px solid var(--color-marquee);
-  outline-offset: 3px;
+// In Tailwind's base layer so utilities (e.g. a composite control drawing focus on its wrapper)
+// can override it.
+@layer base {
+  // Dela Gothic One ships one weight; never fake a bold or italic from it.
+  .font-display {
+    font-synthesis: none;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-marquee);
+    outline-offset: 3px;
+  }
+}
+
+// Motion tokens
+$ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+// Backdrops settle in once on load, then drift slower than the page while scrolling
+// (CSS scroll-driven animation; static where unsupported).
+.backdrop-motion {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: backdrop-settle 1.8s $ease-out-soft both;
+
+    @supports (animation-timeline: scroll()) {
+      animation:
+        backdrop-settle 1.8s $ease-out-soft both,
+        backdrop-drift linear both;
+      animation-timeline: auto, scroll(root);
+      animation-range: normal, 0 100vh;
+    }
+  }
+}
+
+@keyframes backdrop-settle {
+  from {
+    scale: 1.08;
+    opacity: 0.35;
+  }
+}
+
+@keyframes backdrop-drift {
+  to {
+    translate: 0 18%;
+  }
+}
+
+// Grid cards rise in a short wave. `--i` is the card's index within its loaded page.
+.card-rise {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: card-rise 0.55s $ease-out-soft both;
+    animation-delay: calc(min(var(--i, 0), 12) * 40ms);
+  }
+}
+
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+// Hero carousel: the active slide's progress bar runs for one slide interval; its
+// `animationend` advances the slide, and `animation-play-state` pauses it.
+.slide-progress {
+  transform-origin: left center;
+  animation: slide-progress var(--slide-duration, 7s) linear both;
+}
+
+@keyframes slide-progress {
+  from {
+    scale: 0 1;
+  }
+}
+
+// Router view transitions: the page crossfades quickly, the poster morphs.
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 220ms;
+}
+
+::view-transition-group(*) {
+  animation-duration: 480ms;
+  animation-timing-function: $ease-out-soft;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -26,5 +108,11 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

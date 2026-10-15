@@ -4,17 +4,21 @@ import { RouterLink } from '@angular/router';
 import { Icon } from '@shared/icon/icon';
 import { LanguageService } from '@core/i18n/language.service';
 import { Movie } from '@core/movies/movie.models';
+import { PosterTransition, posterTransitionName } from '@shared/poster-transition';
 
 @Component({
   selector: 'app-movie-card',
   imports: [Icon, RouterLink, NgOptimizedImage, DecimalPipe],
-  host: { class: 'block' },
+  host: { class: 'block', 'data-testid': 'movie-card', '[attr.data-movie-id]': 'movie().id' },
   template: `
     <a
       [routerLink]="['/movie', movie().id]"
       class="group flex flex-col gap-3 rounded-md focus-visible:outline-offset-4"
+      (click)="startPosterTransition(poster)"
     >
       <div
+        #poster
+        [style.view-transition-name]="transitionName()"
         class="relative aspect-[2/3] overflow-hidden rounded-md bg-reel ring-1 ring-seam transition-[box-shadow] duration-200 group-hover:ring-2 group-hover:ring-marquee"
       >
         @if (movie().poster_path; as poster) {
@@ -33,7 +37,10 @@ import { Movie } from '@core/movies/movie.models';
         }
       </div>
       <div class="flex flex-col gap-1">
-        <h3 class="text-base leading-snug font-semibold text-screen text-balance">
+        <h3
+          data-testid="movie-card-title"
+          class="text-base leading-snug font-semibold text-screen text-balance"
+        >
           {{ movie().title }}
         </h3>
         <p class="flex items-center gap-3 text-sm text-dim">
@@ -57,6 +64,7 @@ import { Movie } from '@core/movies/movie.models';
 })
 export class MovieCard {
   private readonly languageService = inject(LanguageService);
+  private readonly posterTransition = inject(PosterTransition);
 
   readonly movie = input.required<Movie>();
   /** Loads the poster eagerly; set for cards visible on first paint. */
@@ -65,4 +73,21 @@ export class MovieCard {
   protected readonly t = this.languageService.t;
   protected readonly language = this.languageService.language;
   protected readonly year = computed(() => this.movie().release_date?.slice(0, 4) ?? '');
+
+  /** Named only for the movie the user opened or came back from, so the poster can morph. */
+  protected readonly transitionName = computed(() =>
+    this.posterTransition.activeId() === this.movie().id
+      ? posterTransitionName(this.movie().id)
+      : null,
+  );
+
+  /**
+   * Names the poster synchronously on click: the router captures the old page for the view
+   * transition before change detection would apply `transitionName`.
+   */
+  protected startPosterTransition(poster: HTMLElement): void {
+    const id = this.movie().id;
+    poster.style.viewTransitionName = posterTransitionName(id);
+    this.posterTransition.setActive(id);
+  }
 }

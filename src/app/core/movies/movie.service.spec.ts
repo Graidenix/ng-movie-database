@@ -6,7 +6,15 @@ import { Movie, PagedResponse } from './movie.models';
 import { MovieService } from './movie.service';
 
 function movie(id: number): Movie {
-  return { id, title: `Movie ${id}`, overview: '', poster_path: null, release_date: '2020-01-01', vote_average: 7 };
+  return {
+    id,
+    title: `Movie ${id}`,
+    overview: '',
+    poster_path: null,
+    backdrop_path: null,
+    release_date: '2020-01-01',
+    vote_average: 7,
+  };
 }
 
 function page(pageNumber: number, ids: number[], totalPages = 3): PagedResponse<Movie> {
@@ -65,7 +73,9 @@ describe('MovieService', () => {
 
   it('exposes errors and retries', () => {
     service.getPopularMovies();
-    http.expectOne((r) => r.url === '/api/movies/popular').flush(null, { status: 500, statusText: 'Error' });
+    http
+      .expectOne((r) => r.url === '/api/movies/popular')
+      .flush(null, { status: 500, statusText: 'Error' });
 
     expect(service.error()).toBe('server');
     expect(service.movies()).toEqual([]);

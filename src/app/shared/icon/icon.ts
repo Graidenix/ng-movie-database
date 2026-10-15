@@ -1,6 +1,6 @@
 import { Component, booleanAttribute, input } from '@angular/core';
 
-export type IconName = 'search' | 'arrow-left' | 'star' | 'movie' | 'alert';
+export type IconName = 'search' | 'arrow-left' | 'arrow-right' | 'star' | 'alert';
 
 /**
  * Decorative icon from Atlas Icons (https://iconsatlas.com, ISC license), inlined as SVG.
@@ -27,14 +27,12 @@ export type IconName = 'search' | 'arrow-left' | 'star' | 'movie' | 'alert';
         @case ('arrow-left') {
           <svg:path d="M2.5 12h21M10.14 4.36 2.5 12l7.64 7.64" />
         }
+        @case ('arrow-right') {
+          <svg:path d="M21.5 12H.5M13.86 4.36 21.5 12l-7.64 7.64" />
+        }
         @case ('star') {
           <svg:path
             d="m12 2.78 2.94 5.95 6.56.95-4.75 4.63 1.12 6.54L12 17.77l-5.87 3.08 1.12-6.54L2.5 9.68l6.56-.95L12 2.78z"
-          />
-        }
-        @case ('movie') {
-          <svg:path
-            d="M1.5 2.45h21v19.09h-21zM1.5 7.23h21M2.45 2.45l4.78 4.78M7.23 2.45 12 7.23M12 2.45l4.77 4.78M16.77 2.45l4.78 4.78M5.32 12h13.36M5.32 16.77h7.63"
           />
         }
         @case ('alert') {

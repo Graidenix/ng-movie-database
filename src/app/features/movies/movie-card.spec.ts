@@ -9,6 +9,7 @@ const MOVIE: Movie = {
   title: 'The Matrix',
   overview: 'A hacker learns the truth about reality.',
   poster_path: null,
+  backdrop_path: null,
   release_date: '1999-03-31',
   vote_average: 8.2,
 };

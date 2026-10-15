@@ -6,6 +6,7 @@ import { LoadError, Movie, MovieDetails, PagedResponse } from './movie.models';
 
 /** TMDb reports more pages than it serves; requests past page 500 fail. */
 const TMDB_MAX_PAGE = 500;
+const TRENDING_SLIDES = 6;
 
 /** Talks to the `/api/movies` proxy and exposes list and details state as signals. */
 @Service()
@@ -28,7 +29,12 @@ export class MovieService {
   readonly refreshing = computed(() => this.loadingState() && this.loadingPageState() === 1);
   readonly error = this.errorState.asReadonly();
   readonly query = this.queryState.asReadonly();
-  readonly hasMore = computed(() => this.pageState() > 0 && this.pageState() < this.totalPagesState());
+  /** Movies trending this week that have a backdrop; shown in the home hero carousel. */
+  private readonly trendingState = signal<Movie[]>([]);
+  readonly trending = this.trendingState.asReadonly();
+  readonly hasMore = computed(
+    () => this.pageState() > 0 && this.pageState() < this.totalPagesState(),
+  );
 
   // Details state
   private readonly movieDetailsState = signal<MovieDetails | null>(null);
@@ -42,6 +48,7 @@ export class MovieService {
   private listRequest?: Subscription;
   private listKey = '';
   private lastListPage = 1;
+  private trendingKey = '';
   private detailsRequest?: Subscription;
   private detailsKey = '';
 
@@ -61,6 +68,24 @@ export class MovieService {
 
   retry(): void {
     this.loadList(this.queryState(), this.lastListPage);
+  }
+
+  /** Loads this week's trending movies once per language. Failures leave the hero empty. */
+  getTrendingMovies(): void {
+    const language = this.languageService.language();
+    if (language === this.trendingKey) {
+      return;
+    }
+    this.trendingKey = language;
+    this.http
+      .get<PagedResponse<Movie>>('/api/movies/trending', { params: { lang: language } })
+      .subscribe({
+        next: (response) =>
+          this.trendingState.set(
+            response.results.filter((movie) => movie.backdrop_path).slice(0, TRENDING_SLIDES),
+          ),
+        error: () => (this.trendingKey = ''),
+      });
   }
 
   getMovieDetails(id: number): void {

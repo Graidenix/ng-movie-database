@@ -1,38 +1,68 @@
-import { Component, effect, inject, input, linkedSignal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, linkedSignal, model, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField, form } from '@angular/forms/signals';
-import { Router } from '@angular/router';
-import { Icon } from '@shared/icon/icon';
+import { NavigationEnd, Router } from '@angular/router';
 import { LanguageService } from '@core/i18n/language.service';
+import { Icon } from '@shared/icon/icon';
+import { filter, map } from 'rxjs';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
-/** Search box that keeps the `q` query param in sync with what the user types. */
+/**
+ * Header search. Keeps the `q` query param of the movie list in sync with what the user types.
+ *
+ * - Desktop: a compact pill that widens while focused or holding a query.
+ * - Mobile: a search icon that expands to fill the header row while focused; the header hides
+ *   the logo and language switcher meanwhile (bound through `focused`).
+ *
+ * Results update as you type; the Search button (and Enter / the keyboard's Search key) searches
+ * immediately. `type="search"` + `enterkeyhint` + a form with an `action` give mobile keyboards a
+ * "Search" key (iOS Safari needs the action attribute).
+ */
 @Component({
   selector: 'app-movie-search',
   imports: [Icon, FormField],
+  host: { class: 'contents' },
   template: `
-    <form role="search" class="flex flex-col gap-3" (submit)="onSubmit($event)">
-      <label for="movie-search" class="text-sm font-medium text-dim">{{ t().searchLabel }}</label>
-      <div class="flex flex-col gap-3 sm:flex-row">
-        <div class="relative flex-1">
-          <app-icon name="search" class="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-dim" />
-          <input
-            id="movie-search"
-            type="search"
-            autocomplete="off"
-            enterkeyhint="search"
-            [formField]="searchForm.query"
-            [placeholder]="t().searchPlaceholder"
-            class="h-14 w-full rounded-md border border-edge bg-reel pr-4 pl-12 text-lg text-screen placeholder:text-dim focus-visible:border-marquee"
-          />
-        </div>
-        <button
-          type="submit"
-          class="h-14 cursor-pointer rounded-md bg-marquee px-8 text-base font-semibold text-ink transition-colors hover:bg-marquee-hover active:bg-marquee-press"
-        >
-          {{ t().searchButton }}
-        </button>
-      </div>
+    <form
+      role="search"
+      action=""
+      data-testid="search-form"
+      class="group z-30 flex h-11 items-center overflow-hidden gap-1 rounded-full border border-edge bg-ink/70 backdrop-blur-md transition-[width,border-color,box-shadow] duration-300 ease-out focus-within:border-marquee/70 focus-within:ring-4 focus-within:ring-marquee/15 max-sm:w-11 max-sm:data-focused:w-full sm:w-48 sm:pr-1 sm:data-filled:w-72 sm:data-focused:w-72 md:data-filled:w-96 md:data-focused:w-96"
+      [attr.data-focused]="focused() ? '' : null"
+      [attr.data-filled]="filled() ? '' : null"
+      (submit)="onSubmit($event, input)"
+      (focusin)="focused.set(true)"
+      (focusout)="focused.set(false)"
+    >
+      <label
+        for="movie-search"
+        class="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-dim"
+      >
+        <app-icon name="search" class="size-5" />
+        <span class="sr-only">{{ t().searchLabel }}</span>
+      </label>
+      <input
+        #input
+        id="movie-search"
+        data-testid="search-input"
+        type="search"
+        inputmode="search"
+        enterkeyhint="search"
+        autocomplete="off"
+        [formField]="searchForm.query"
+        [placeholder]="focused() ? t().searchPlaceholder : t().searchShort"
+        (keydown.escape)="input.blur()"
+        class="h-full min-w-0 flex-1 bg-transparent text-base text-screen outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:hidden"
+      />
+      <button
+        type="submit"
+        data-testid="search-submit"
+        class="hidden h-9 shrink-0 cursor-pointer items-center rounded-full bg-marquee px-4 text-sm font-semibold text-ink transition-[scale,filter] group-data-focused:flex hover:brightness-110 active:scale-95 sm:group-data-filled:flex"
+        (mousedown)="$event.preventDefault()"
+      >
+        {{ t().searchButton }}
+      </button>
     </form>
   `,
 })
@@ -40,8 +70,14 @@ export class MovieSearch {
   private readonly router = inject(Router);
   protected readonly t = inject(LanguageService).t;
 
-  /** Current query from the URL. */
-  readonly query = input('');
+  /** `q` of the current URL ('' outside the list or without a search). */
+  private readonly query = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.readQuery()),
+    ),
+    { initialValue: this.readQuery() },
+  );
 
   /** Last value this component pushed to the URL; ignored when it comes back via `query`. */
   private lastNavigatedQuery: string | null = null;
@@ -52,6 +88,10 @@ export class MovieSearch {
       previous && query === this.lastNavigatedQuery ? previous.value : { query },
   });
   protected readonly searchForm = form(this.model);
+
+  /** True while focus is inside the search; two-way bound so the header can make room. */
+  readonly focused = model(false);
+  protected readonly filled = computed(() => this.searchForm.query().value().trim() !== '');
 
   constructor() {
     // Typing filters results after a short pause.
@@ -65,13 +105,29 @@ export class MovieSearch {
     });
   }
 
-  protected onSubmit(event: Event): void {
+  /** Enter / Search: search now and close the on-screen keyboard. */
+  protected onSubmit(event: Event, input: HTMLInputElement): void {
     event.preventDefault();
     this.navigate(this.searchForm.query().value().trim(), false);
+    input.blur();
   }
 
-  private navigate(query: string, replaceUrl: boolean): void {
+  /**
+   * Shows results on the movie list. While typing on the list, the URL is replaced instead of
+   * pushed, so Back doesn't step through every keystroke; coming from another page pushes, so
+   * Back returns there.
+   */
+  private navigate(query: string, typing: boolean): void {
+    const onList = this.router.url.split(/[?#]/)[0] === '/';
     this.lastNavigatedQuery = query;
-    void this.router.navigate([], { queryParams: { q: query || null }, replaceUrl });
+    void this.router.navigate(['/'], {
+      queryParams: { q: query || null },
+      replaceUrl: typing && onList,
+    });
+  }
+
+  private readQuery(): string {
+    const path = this.router.url.split(/[?#]/)[0];
+    return path === '/' ? (this.router.parseUrl(this.router.url).queryParams['q'] ?? '') : '';
   }
 }

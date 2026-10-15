@@ -3,7 +3,18 @@
   "framework": "angular",
   "outputDirectory": "dist/ng-movie-database/browser",
   "functions": {
-    "api/ssr.mjs": { "includeFiles": "dist/ng-movie-database/**" }
+    "api/ssr.mjs": {
+      "includeFiles": "dist/ng-movie-database/**"
+    }
   },
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/api/ssr" }]
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/api/ssr"
+    }
+  ]
 }

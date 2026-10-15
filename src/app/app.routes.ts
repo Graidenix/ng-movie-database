@@ -3,8 +3,7 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () =>
-      import('@features/movies/movie-list-page').then((m) => m.MovieListPage),
+    loadComponent: () => import('@features/movies/movie-list-page').then((m) => m.MovieListPage),
   },
   {
     path: 'movie/:id',

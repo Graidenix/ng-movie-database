@@ -7,6 +7,7 @@ import { LANGUAGES, Language, TRANSLATIONS } from '@core/i18n/translations';
   template: `
     <div
       role="group"
+      data-testid="language-switcher"
       [attr.aria-label]="t().languageSwitcherLabel"
       class="flex rounded-md border border-edge p-1"
     >
@@ -14,6 +15,7 @@ import { LANGUAGES, Language, TRANSLATIONS } from '@core/i18n/translations';
         <button
           type="button"
           [attr.lang]="option.code"
+          [attr.data-testid]="'language-' + option.code"
           [attr.aria-label]="option.name"
           [attr.aria-pressed]="option.code === language()"
           class="h-9 min-w-11 cursor-pointer rounded px-3 text-sm font-semibold text-dim transition-colors hover:text-screen aria-pressed:bg-marquee aria-pressed:text-ink"

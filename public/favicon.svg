@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Movie Database</title>
+  <rect width="512" height="512" rx="112" fill="#101826"/>
+  <g transform="translate(256 256) scale(1.4) translate(-266 -250)">
+    <rect x="118" y="127" width="277" height="233" rx="33" fill="#f2c14e"/>
+    <rect x="181" y="149" width="150" height="188" rx="13" fill="#101826"/>
+    <g fill="#101826">
+      <rect x="136" y="157" width="28" height="30" rx="6"/>
+      <rect x="136" y="209" width="28" height="30" rx="6"/>
+      <rect x="136" y="261" width="28" height="30" rx="6"/>
+      <rect x="136" y="310" width="28" height="30" rx="6"/>
+      <rect x="348" y="157" width="28" height="30" rx="6"/>
+      <rect x="348" y="209" width="28" height="30" rx="6"/>
+    </g>
+    <path d="M221 196 L295 239 L221 282 Z" fill="#f2c14e" stroke="#f2c14e" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M355 260 L372 298.5 L414 302.8 L382.6 331 L391.4 372.2 L355 351 L318.6 372.2 L327.4 331 L296 302.8 L338 298.5Z" fill="#101826" stroke="#101826" stroke-width="26" stroke-linejoin="round"/>
+    <path d="M355 260 L372 298.5 L414 302.8 L382.6 331 L391.4 372.2 L355 351 L318.6 372.2 L327.4 331 L296 302.8 L338 298.5Z" fill="#f2c14e" stroke="#f2c14e" stroke-width="8" stroke-linejoin="round"/>
+  </g>
+</svg>

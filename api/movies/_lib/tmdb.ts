@@ -19,14 +19,18 @@ export function tmdbPage(url: URL): string {
   return Number.isInteger(page) && page >= 1 && page <= MAX_PAGE ? String(page) : '1';
 }
 
+export type TmdbResult =
+  | { ok: true; data: unknown }
+  | { ok: false; status: 404 | 500 | 502; error: string };
+
 /**
- * Calls TMDb with the server-side API key and forwards the JSON result.
+ * Calls TMDb with the server-side API key.
  * Supports both a v3 API key and a v4 read access token (JWT, starts with `eyJ`).
  */
-export async function proxyTmdb(path: string, params: Record<string, string>): Promise<Response> {
+export async function fetchTmdb(path: string, params: Record<string, string>): Promise<TmdbResult> {
   const apiKey = process.env['TMDB_API_KEY'];
   if (!apiKey) {
-    return json({ error: 'TMDB_API_KEY is not configured' }, 500);
+    return { ok: false, status: 500, error: 'TMDB_API_KEY is not configured' };
   }
 
   const url = new URL(TMDB_BASE_URL + path);
@@ -44,13 +48,21 @@ export async function proxyTmdb(path: string, params: Record<string, string>): P
   try {
     const response = await fetch(url, { headers });
     if (response.status === 404) {
-      return json({ error: 'Not found' }, 404);
+      return { ok: false, status: 404, error: 'Not found' };
     }
     if (!response.ok) {
-      return json({ error: 'TMDb request failed' }, 502);
+      return { ok: false, status: 502, error: 'TMDb request failed' };
     }
-    return json(await response.json(), 200, { 'cache-control': CACHE_CONTROL });
+    return { ok: true, data: await response.json() };
   } catch {
-    return json({ error: 'TMDb is unavailable' }, 502);
+    return { ok: false, status: 502, error: 'TMDb is unavailable' };
   }
+}
+
+/** Calls TMDb and forwards the JSON result, cached at the edge. */
+export async function proxyTmdb(path: string, params: Record<string, string>): Promise<Response> {
+  const result = await fetchTmdb(path, params);
+  return result.ok
+    ? json(result.data, 200, { 'cache-control': CACHE_CONTROL })
+    : json({ error: result.error }, result.status);
 }

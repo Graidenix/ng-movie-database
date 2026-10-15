@@ -36,8 +36,7 @@ export class LanguageService {
 
   setLanguage(language: Language): void {
     this.languageState.set(language);
-    this.document.cookie =
-      `${COOKIE_NAME}=${language}; Path=/; Max-Age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+    this.document.cookie = `${COOKIE_NAME}=${language}; Path=/; Max-Age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
   }
 
   /**
